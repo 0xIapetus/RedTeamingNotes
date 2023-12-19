@@ -4,7 +4,7 @@ https://github.com/leoloobeek/LAPSToolkit
 https://github.com/SnaffCon/Snaffler
 https://github.com/GhostPack/Seatbelt
 
-## I just landed where the fuck I AM ?
+## I just landed where the **** I AM ?
 # Nestat
 `netstat -na`
 # Arp table (These IP have communicated with our system, Could be LAN or not)
