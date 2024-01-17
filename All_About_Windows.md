@@ -375,7 +375,7 @@ xfreerdp /v:thmjmp1.za.tryhackme.com /u:grace.brooks /d:za.tryhackme.com /p:Vrgr
 
 ################################################
 
-## Install RSAT Tools and perform enumeration (oriaka gia petama)
+## Install RSAT Tools and perform enumeration
 
 `Get-WindowsCapability -Name RSAT* -Online | Add-WindowsCapability -Online` *Install them*
 # Enumerate user
