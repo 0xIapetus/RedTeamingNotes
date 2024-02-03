@@ -1,9 +1,3 @@
-https://www.kali.org/tools/responder/
-https://github.com/dirkjanm/ldapdomaindump
-https://github.com/leoloobeek/LAPSToolkit
-https://github.com/SnaffCon/Snaffler
-https://github.com/GhostPack/Seatbelt
-
 ## I just landed where the **** I AM ?
 # Nestat
 `netstat -na`
