@@ -1,1 +1,1 @@
-My personal (not ready- not political correct) cheatsheet for windows hacking
+My personal cheatsheet for windows active directory hacking
