@@ -285,8 +285,6 @@ Optional quick check:`| Format-Table Name, Enabled`
 `reg query HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Channels\Microsoft-Windows-Sysmon/Operational`
 # Find the sysmon configuration file (So as to see what is being monitored, BECAREFULL IT MAY TRIGGER AV)
 `findstr /si '<ProcessCreate onmatch="exclude">' C:\*`
-# EDR checker
-https://github.com/PwnDexter/SharpEDRChecker
 # Check for installed applications and versions
 `wmic product get name,version,vendor`
 # Check for running Services
@@ -345,10 +343,6 @@ olcSaslSecProps: noanonymous,minssf=0,passcred
 Responder will attempt to poison any  Link-Local Multicast Name Resolution (LLMNR),  NetBIOS Name Service (NBT-NS), and Web Proxy Auto-Discovery (WPAD) requests that are detected. On large Windows networks, hosts can first attempt to determine if the host they are looking for is on the same local network by sending out LLMNR requests and seeing if any hosts respond.Responder will actively listen to the requests and send poisoned responses telling the requesting host that our IP is associated with the requested hostname. In the same line, it starts to host several servers such as SMB, HTTP, SQL, and others to capture these requests and force authentication. 
 `sudo responder -I tun0`
 
-# PXE Boot - LAPS (https://www.riskinsight-wavestone.com/en/2020/01/taking-over-windows-workstations-pxe-laps/)
-
-# Enumeration with Seatbelt (https://github.com/GhostPack/Seatbelt)
-
 # Runas (not domain joined )
 When the PC is not joined to the domain and we have AD credentials we can use Runas to inject the credentials into memory.So commands executed locally on the computer will run in the context of your standard Windows account, but any network connections will occur using the domain account specified. 
 `runas.exe /netonly /user:<domain>\<username> cmd.exe`
@@ -361,13 +355,6 @@ Set-DnsClientServerAddress -InterfaceIndex $index -ServerAddresses $dnsip` *Most
 # SYSVOL 
 `dir \\za.tryhackme.com\SYSVOL`*Kerberos authentication*
 `dir \\<DC IP>\SYSVOL ` *Stealthier NTLM authentication*
-
-###############################################
-ssh za.tryhackme.com\\grace.brooks@thmjmp1.za.tryhackme.com -> Vrgr6062
-xfreerdp /v:thmjmp1.za.tryhackme.com /u:grace.brooks /d:za.tryhackme.com /p:Vrgr6062 /dynamic-resolution
-
-
-################################################
 
 ## Install RSAT Tools and perform enumeration
 
