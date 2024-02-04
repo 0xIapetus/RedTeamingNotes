@@ -1,6 +1,6 @@
 
 ## Summary
-- [General](#general)
+- [General](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#general)
 - [Initial Recognition](#initial-recognition)
 - [Domain Enumeration](#domain-enumeration)
 - [GPO Policy](#gpo-policy)
