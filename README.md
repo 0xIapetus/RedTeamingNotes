@@ -5,7 +5,7 @@
 - [Domain Enumeration](https://github.com/0xIapetus/RedTeamingNotes/blob/main/README.md#domain-enumeration)
 - [GPO Policy](https://github.com/0xIapetus/RedTeamingNotes/blob/main/README.md#gpo-policy)
 - [Privilege Escalation](https://github.com/0xIapetus/RedTeamingNotes/blob/main/README.md#privilege-escalation)
-- [Persistence](https://github.com/0xIapetus/RedTeamingNotes/blob/main/README.md#persistence))
+- [Persistence](https://github.com/0xIapetus/RedTeamingNotes/blob/main/README.md#persistence)
 - [UAC Bypass Methods](https://github.com/0xIapetus/RedTeamingNotes/blob/main/README.md#uac-bypass-methods)
 - [Evading Logging](https://github.com/0xIapetus/RedTeamingNotes/blob/main/README.md#evading-logging)
 - [File Operations](https://github.com/0xIapetus/RedTeamingNotes/blob/main/README.md#file-operations)
