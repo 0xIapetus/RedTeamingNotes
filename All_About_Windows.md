@@ -28,6 +28,9 @@
 - [Kerberos CONSTRAINED DELEGATION ](#constrained-delegation)
 - [Resource-based Constrained Delegation](#resource-based-constrained-delegation)
 - [Forest Privesc](#forest-privesc)
+- [Forest Privesc](#forest-privesc)
+- [Trust Abuse - MSSQL Servers](#trust-abuse-mssql-servers)
+- [OPSEC proposals, Notes, DEFENSES](#opsec-proposals,-notes,-defenses)
 
 ## General
 Commands to bypass execution policy and other general PowerShell commands.
