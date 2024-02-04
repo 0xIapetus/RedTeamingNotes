@@ -23,7 +23,7 @@
 - [PASS THE HASH/OVERPASS THE HASH AND ETC MIMIKATZ](#pass-the-hashoverpass-the-hash-and-etc-mimikatz)
 - [Persisting through AD Group Templates](#persisting-through-ad-group-templates)
 - [Finding Vulnerable Certificate Templates](#finding-vulnerable-certificate-templates)
-- [Permission Delegation](#permis)
+- [Permission Delegation](#permision-delegation)
 - [Kerberos UNCONSTRAINED DELEGATION](#kerberos-unconstrained-delegation)
 - [Kerberos CONSTRAINED DELEGATION ](#constrained-delegation)
 - [Resource-based Constrained Delegation](#resource-based-constrained-delegation)
