@@ -1,4 +1,4 @@
-
+ 
 ## Summary
 - [General](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#general)
 - [Initial Recognition](https://github.com/0xIapetus/RedTeamingNotes/blob/main/README.md#initial-recognition)
