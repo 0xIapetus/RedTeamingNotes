@@ -30,7 +30,7 @@
 - [Forest Privesc](#forest-privesc)
 - [Forest Privesc](#forest-privesc)
 - [Trust Abuse - MSSQL Servers](#trust-abuse-mssql-servers)
-- [OPSEC proposals, Notes, DEFENSES](#opsec-proposals,-notes,-defenses)
+- [OPSEC proposals, offensive Notes, DEFENSES ](#opsec-proposals-offensive-notes-defenses)
 
 ## General
 Commands to bypass execution policy and other general PowerShell commands.
