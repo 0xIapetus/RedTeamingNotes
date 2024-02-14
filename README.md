@@ -6,7 +6,6 @@
 - [Privilege Escalation](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#privilege-escalation)
 - [UAC Bypass Methods](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#uac-bypass-methods)
 - [Evading Logging](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#evading-logging)
-- [File Operations](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#file-operations)
 - [File Transfer](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#file-transfer)
 - [Event Logs and Sysmon](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#event-logs-and-sysmon)
 - [Remote Execution](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#remote-execution)
