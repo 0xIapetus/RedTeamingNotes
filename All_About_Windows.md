@@ -7,7 +7,6 @@
 - [Privilege Escalation](#privilege-escalation)
 - [UAC Bypass Methods](#uac-bypass-methods)
 - [Evading Logging](#evading-logging)
-- [File Operations](#file-operations)
 - [File Transfer](#file-transfer)
 - [Event Logs and Sysmon](#event-logs-and-sysmon)
 - [Remote Execution](#remote-execution)
