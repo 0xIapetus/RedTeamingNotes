@@ -1,6 +1,6 @@
 ## Summary
 - [General](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#general)
-- [Initial Recognition](https://github.com/0xIapetus/RedTeamingNotes/blob/All_About_Windows.md#initial-recognition)
+- [Initial Recognition](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#initial-recognition)
 - [Domain Enumeration](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#domain-enumeration)
 - [GPO Policy](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#gpo-policy)
 - [Privilege Escalation](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#privilege-escalation)
