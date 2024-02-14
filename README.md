@@ -4,7 +4,6 @@
 - [Domain Enumeration](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#domain-enumeration)
 - [GPO Policy](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#gpo-policy)
 - [Privilege Escalation](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#privilege-escalation)
-- [Persistence](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#persistence)
 - [UAC Bypass Methods](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#uac-bypass-methods)
 - [Evading Logging](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#evading-logging)
 - [File Operations](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#file-operations)
