@@ -25,6 +25,6 @@
 - [Kerberos CONSTRAINED DELEGATION ](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#constrained-delegation)
 - [Resource-based Constrained Delegation](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#resource-based-constrained-delegation)
 - [Forest Privesc](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#forest-privesc)
-- [Trust Abuse - MSSQL Servers](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#trust-abuse-mssql-servers)
+- [Trust Abuse - MSSQL Servers](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#trust-abuse---mssql-servers)
 - [OPSEC proposals, offensive Notes, DEFENSES ](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#opsec-proposals-offensive-notes-defenses)
 
