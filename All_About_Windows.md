@@ -5,7 +5,6 @@
 - [Domain Enumeration](#domain-enumeration)
 - [GPO Policy](#gpo-policy)
 - [Privilege Escalation](#privilege-escalation)
-- [Persistence](#persistence)
 - [UAC Bypass Methods](#uac-bypass-methods)
 - [Evading Logging](#evading-logging)
 - [File Operations](#file-operations)
