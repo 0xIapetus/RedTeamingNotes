@@ -86,6 +86,8 @@ Commands for initial reconnaissance including system info, network stats, and us
 - **File Searches:** ``Get-ChildItem -Path C:\ -Include *interesting-fle.txt* -File -Recurse -ErrorAction SilentlyContinue` and `Get-Content "C:\Program Files\interestingfile.txt.txt"` for specific files
 
 ## Domain Enumeration
+- **Uncover Domain Controllers via DNS (Location of services through the DNS SRV type, without having to scan a single port)**  
+`dig -t SRV _ldap._tcp.goblins.local`Linux based systems, `Resolve-DnsName -Type SRV _ldap._tcp.goblins.local`From PowerShell systems, `nslookup -type=srv _ldap._tcp.goblins.local` From Windows CMD
 Commands specific to domain enumeration, including user and group listings, domain controllers, and policies.
 - **Install RSAT Tools and perform enumeration**`Get-WindowsCapability -Name RSAT* -Online | Add-WindowsCapability -Online`
 - **Current Domain Information:** `Get-Domain` (PowerView), `Get-ADDomain` (ActiveDirectory Module)
