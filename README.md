@@ -15,7 +15,7 @@
 - [Bloodhound + Extra Queries](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#bloodhound-extra-queries)
 - [Finding Vulnerable Certificate Templates](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#finding-vulnerable-certificate-templates)
 - [Persistence in AD](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#persistence-in-ad)
-- [Credential harvesting](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#persistence-in-ad)
+- [Credential harvesting](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#credential-harvesting)
 - [Kerberoasting](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#kerberoasting)
 - [Pass The Hash/Key/Overpass The Hash and more](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#pass-the-hashoverpass-the-hash-and-etc-mimikatz)
 - [Persisting through AD Group Templates](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#persisting-through-ad-group-templates)
