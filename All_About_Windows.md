@@ -724,6 +724,8 @@ Right after you perform these steps, you will get an error that you can no longe
 ## Credential harvesting
 
 - **Dump local hashes, one way**
+- `Check powershell console history for credentials`
+- **Dump local hashes, one way**
 *cmd.exe prompt with administrator privileges*
 `wmic shadowcopy call create Volume='C:\'`*wmic command to create a copy shadow of C: drive*
 `vssadmin list shadows`*Listing the Available Shadow Volumes*
