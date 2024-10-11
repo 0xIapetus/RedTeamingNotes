@@ -1,4 +1,4 @@
-https://learn.microsoft.com/en-us/defender-endpoint/attack-surface-reduction-rules-reference
+https://learn.microsoft.com/en-us/defender-endpoint/attack-surface-reduction-rules-reference -> bypasses:  https://github.com/HackingLZ/ExtractedDefender/tree/main/asr
 
 https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/applications-that-can-bypass-appcontrol
 
