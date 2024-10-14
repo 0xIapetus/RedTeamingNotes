@@ -2,6 +2,8 @@ https://learn.microsoft.com/en-us/defender-endpoint/attack-surface-reduction-rul
 
 https://learn.microsoft.com/en-us/deployedge/microsoft-edge-security-downloads-interruptions
 
+https://support.microsoft.com/en-us/office/blocked-attachments-in-outlook-434752e1-02d3-4e90-9124-8b81e49a8519
+
 https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/applications-that-can-bypass-appcontrol
 
 ## Summary
