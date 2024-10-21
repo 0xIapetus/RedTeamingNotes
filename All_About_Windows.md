@@ -1,3 +1,5 @@
+https://lolol.farm/
+
 https://learn.microsoft.com/en-us/defender-endpoint/attack-surface-reduction-rules-reference -> bypasses:  https://github.com/HackingLZ/ExtractedDefender/tree/main/asr
 
 https://learn.microsoft.com/en-us/deployedge/microsoft-edge-security-downloads-interruptions
