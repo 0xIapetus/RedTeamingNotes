@@ -99,6 +99,8 @@ Commands for initial reconnaissance including system info, network stats, and us
 `dig -t SRV _ldap._tcp.goblins.local`Linux based systems, `Resolve-DnsName -Type SRV _ldap._tcp.goblins.local`From PowerShell, `nslookup -type=srv _ldap._tcp.goblins.local` From Windows CMD
 
 Commands specific to domain enumeration, including user and group listings, domain controllers, and policies.
+- **The ActiveDirectory PowerShell module (MS signed)**`Import-Module C:\AD\Tools\ADModule-master\Microsoft.ActiveDirectory.Management.dll 
+     Import-Module C:\AD\Tools\ADModule-master\ActiveDirectory\ActiveDirectory.psd1`
 - **Install RSAT Tools and perform enumeration**`Get-WindowsCapability -Name RSAT* -Online | Add-WindowsCapability -Online`
 - **Current Domain Information:** `Get-Domain` (PowerView), `Get-ADDomain` (ActiveDirectory Module)
 - **Domain object and SID:** `Get-Domain–Domain moneycorp.local` `Get-ADDomain-Identity moneycorp.local`, `Get-DomainSID` `(Get-ADDomain).DomainSID`
