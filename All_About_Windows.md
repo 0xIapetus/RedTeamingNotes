@@ -85,7 +85,7 @@ Commands for initial reconnaissance including system info, network stats, and us
 `wmic service where "name like 'Vuln Service'" get name,PathName`,`Get-Process -Name OXI-service`,`nestat -aon |findstr "LISTENING" | findstr "3212"`
 - **LDAP Enumeration:** Examples with 
 `Get-ADUser -Filter * -SearchBase "CN=Users,DC=EIMAIREDTEAM,DC=COM"`Using the SearchBase option, we specify a specific Common-Name CN,The DN consists of Domain Component (DC), OrganizationalUnitName (OU), Common Name (CN)
-- **Access SYSVOL using Kerberos or NTLM authentication:** `dir \\za.NAI.com\SYSVOL`, `dir \\<DC IP>\SYSVOL` (The first uses Kerberos, and the second uses a stealthier NTLM authentication method.)
+- **Access SYSVOL:** `dir \\za.NAI.com\SYSVOL`, `dir \\<DC IP>\SYSVOL` (The first uses Kerberos, and the second uses a stealthier NTLM authentication method.)
 
 - **AV Detection:** `wmic /namespace:\root\securitycenter2 path antivirusproduct` and `Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntivirusProduct` Windows servers may not have SecurityCenter2 namespace, but workstations have
 - **File and Directory Permissions:** Owner of a directory `Get-Acl c:/`, View the permissions set on a directory `icacls <directory>`, give full perms on dir`icacls c:\users /grant joe:f` , Remove a users' permissions on a directory
