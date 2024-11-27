@@ -1239,6 +1239,10 @@ content: "malware-development- test-123456789-0987654321"
 ## Things to remember 12: When looking for domain admins
 - **Opsec Things to Remember 12:** When looking for domain admins, you should always check the SID. If the last three digits are 500, someone might have renamed them. On the other hand, on a non-domain machine when you are not a local admin, you can't find that if they are renamed.
 
+## Things to remember 13: Kerberos double hop
+- **If you login with winrs for exmaple into a computer and before you have used kerberos for authentication and u try it again authenticating using kerberos to another machine you will not be able to do it, there are many ways to bypass it, it depends on what you can do, using explicit credentials can be the easy way (NTLM) and rev shell**-
+
+
 ### Behavioural bypassing
 ## Scenario 1: Download and execute in memory
 - **Behavioural Bypassing Scenario 1:** When an admin is running as a service on a machine we can extract the clear text pass with sekurlsa::ekeyes.
