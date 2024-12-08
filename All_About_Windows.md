@@ -8,6 +8,8 @@ https://support.microsoft.com/en-us/office/blocked-attachments-in-outlook-434752
 
 https://learn.microsoft.com/en-us/windows/security/application-security/application-control/app-control-for-business/design/applications-that-can-bypass-appcontrol
 
+https://www.politoinc.com/post/ldap-queries-for-offensive-and-defensive-operations
+
 ## Summary
 - [General](#general)
 - [Initial Recognition](#initial-recognition)
