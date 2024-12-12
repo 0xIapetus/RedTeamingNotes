@@ -10,9 +10,9 @@ https://learn.microsoft.com/en-us/windows/security/application-security/applicat
 
 https://www.politoinc.com/post/ldap-queries-for-offensive-and-defensive-operations
 
-https://attackevals.mitre-engenuity.org/results/enterprise/?evaluation=er6&scenario=1&view=cohort
+https://attackevals.mitre-engenuity.org/results/enterprise/?evaluation=er6&scenario=1&view=cohort (vendor depended)
 
-https://attack.mitre.org/matrices/enterprise/windows/
+https://attack.mitre.org/matrices/enterprise/windows/ (mitigations,detections)
 
 ## Summary
 - [General](#general)
