@@ -10,6 +10,10 @@ https://learn.microsoft.com/en-us/windows/security/application-security/applicat
 
 https://www.politoinc.com/post/ldap-queries-for-offensive-and-defensive-operations
 
+https://attackevals.mitre-engenuity.org/results/enterprise/?evaluation=er6&scenario=1&view=cohort
+
+https://attack.mitre.org/matrices/enterprise/windows/
+
 ## Summary
 - [General](#general)
 - [Initial Recognition](#initial-recognition)
