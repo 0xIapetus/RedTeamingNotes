@@ -14,6 +14,10 @@ https://attackevals.mitre-engenuity.org/results/enterprise/?evaluation=er6&scena
 
 https://attack.mitre.org/matrices/enterprise/windows/ (mitigations,detections)
 
+https://www.mdsec.co.uk/knowledge-centre/insights/
+https://posts.specterops.io/
+https://www.outflank.nl/blog/
+
 ## Summary
 - [General](#general)
 - [Initial Recognition](#initial-recognition)
