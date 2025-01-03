@@ -12,8 +12,9 @@ https://www.politoinc.com/post/ldap-queries-for-offensive-and-defensive-operatio
 
 https://attackevals.mitre-engenuity.org/results/enterprise/?evaluation=er6&scenario=1&view=cohort (vendor depended)
 
-https://attack.mitre.org/matrices/enterprise/windows/ (mitigations,detections)
+https://cyberwarfare.live/edr-series-how-edr-hooks-api-calls-part-1/
 
+https://attack.mitre.org/matrices/enterprise/windows/ (mitigations,detections)
 https://www.mdsec.co.uk/knowledge-centre/insights/
 https://posts.specterops.io/
 https://www.outflank.nl/blog/
