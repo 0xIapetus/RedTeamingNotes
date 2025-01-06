@@ -1,3 +1,5 @@
+http://www.rohitab.com/apimonitor
+
 https://lolol.farm/
 
 https://learn.microsoft.com/en-us/defender-endpoint/attack-surface-reduction-rules-reference -> bypasses:  https://github.com/HackingLZ/ExtractedDefender/tree/main/asr
