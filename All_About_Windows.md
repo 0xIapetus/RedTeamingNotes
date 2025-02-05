@@ -18,6 +18,8 @@ https://codemachine.com/articles/x64_deep_dive.html
 
 https://cyberwarfare.live/edr-series-how-edr-hooks-api-calls-part-1/
 
+https://jsecurity101.medium.com/understanding-telemetry-kernel-callbacks-1a97cfcb8fb3
+
 
 https://attack.mitre.org/matrices/enterprise/windows/ (mitigations,detections)
 https://www.mdsec.co.uk/knowledge-centre/insights/
