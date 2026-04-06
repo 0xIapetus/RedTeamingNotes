@@ -43,7 +43,7 @@ https://www.outflank.nl/blog/
 - [Bloodhound + Extra Queries](#bloodhound-extra-queries)
 - [Finding Vulnerable Certificate Templates](#finding-vulnerable-certificate-templates)
 - [Persistence in AD](#persistence-in-ad)
-- [Credential harvesting](#persistence-in-ad)
+- [Credential harvesting](#credential-harvesting)
 - [Kerberoasting](#kerberoasting)
 - [PASS THE HASH/OVERPASS THE HASH AND ETC MIMIKATZ](#pass-the-hashoverpass-the-hash-and-etc-mimikatz)
 - [Persisting through AD Group Templates](#persisting-through-ad-group-templates)
