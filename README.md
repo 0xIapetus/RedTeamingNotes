@@ -1,30 +1,8 @@
-## Summary
-- [General](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#general)
-- [Initial Recognition](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#initial-recognition)
-- [Domain Enumeration](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#domain-enumeration)
-- [GPO Policy](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#gpo-policy)
-- [Privilege Escalation](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#privilege-escalation)
-- [UAC Bypass Methods](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#uac-bypass-methods)
-- [Evading Logging](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#evading-logging)
-- [File Transfer](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#file-transfer)
-- [Event Logs and Sysmon](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#event-logs-and-sysmon)
-- [Remote Execution](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#remote-execution)
-- [Rdp-Hijacking](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#rdp-hijacking)
-- [Authentication Relays](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#authentication-relays)
-- [Exploiting GPOs](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#exploiting-gpos)
-- [Bloodhound + Extra Queries](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#bloodhound-extra-queries)
-- [Finding Vulnerable Certificate Templates](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#finding-vulnerable-certificate-templates)
-- [Persistence in AD](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#persistence-in-ad)
-- [Credential harvesting](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#credential-harvesting)
-- [Kerberoasting](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#kerberoasting)
-- [Pass The Hash/Key/Overpass The Hash and more](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#pass-the-hashoverpass-the-hash-and-etc-mimikatz)
-- [Persisting through AD Group Templates](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#persisting-through-ad-group-templates)
-- [Finding Vulnerable Certificate Templates](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#finding-vulnerable-certificate-templates)
-- [Permission Delegation](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#permission-delegation)
-- [Kerberos Unconstrained Delegation](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#kerberos-unconstrained-delegation)
-- [Kerberos Constrained Delegation](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#constrained-delegation)
-- [Resource-based Constrained Delegation](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#resource-based-constrained-delegation)
-- [Forest Privesc](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#forest-privesc)
-- [Trust Abuse - MSSQL Servers](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#trust-abuse---mssql-servers)
-- [OPSEC Proposals, Offensive Notes, Defenses ](https://github.com/0xIapetus/RedTeamingNotes/blob/main/All_About_Windows.md#opsec-proposals-notes-defenses)
+# RedTeamingNotes
 
+This repository contains Windows and Active Directory red team notes.
+
+## Cheat Sheets
+
+- [Red Team Cheat Sheet](./Red-Team-Cheat-Sheet.md) - cleaned single-file version formatted like the Active Directory Exploitation Cheat Sheet.
+- [Original Windows Notes](./All_About_Windows.md) - original source notes preserved for reference.
