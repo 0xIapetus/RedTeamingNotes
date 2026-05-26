@@ -77,7 +77,7 @@ When the PC is not joined to the domain and we have AD credentials we can use Ru
 
 ## Initial Recognition
 Commands for initial reconnaissance including system info, network stats, and user privileges.
-- **Netstat:** ```netstat -na```
+- **Netstat:** `netstat -na`
 - **ARP Table:** `arp -a`
 - **Same machine Port enumeration**`for($i=130; $i -le 140; $i++){Test-NetConnection localhost -Port $i}`
 - **Other machine discovery**
