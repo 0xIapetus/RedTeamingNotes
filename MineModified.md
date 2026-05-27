@@ -81,7 +81,8 @@ Use these notes only in environments where you have explicit authorization.
 - **Conextual Awareness:**
 
   ```cmd
-  ipconfig /all #Will return specific properties of a specific user
+  #Will return specific properties of a specific user
+  ipconfig /all 
   systeminfo
   systeminfo | findstr Domain
   whoami /priv
