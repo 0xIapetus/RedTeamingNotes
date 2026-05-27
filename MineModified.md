@@ -59,13 +59,17 @@ Use these notes only in environments where you have explicit authorization.
   Set-ExecutionPolicy Bypass -Scope Process
   $env:PSExecutionPolicyPreference = "bypass"
   ```
-
+  
 - **Use domain credentials from a non-domain joined host:**
 
   ```cmd
   runas.exe /netonly /user:<DomainName>\<Username> cmd.exe
   ```
-
+- **Uncover Domain Controllers via DNS :**
+  ```cmd
+  # Location of services through the DNS SRV type, without having to scan a single port, cmd only
+  nslookup -type=srv _ldap._tcp.goblins.local From Windows CMD
+  ```
 - **Set DNS to the domain controller when resolution is not configured:**
 
   ```powershell
@@ -81,37 +85,70 @@ Use these notes only in environments where you have explicit authorization.
   ```powershell
   # Host/Domain context
   systeminfo
+  
   # Check the proccesses
   Get-Process
+  
+  # Scheduled execution surface
+  Get-ScheduledTask
+
+  # Service inventory
+  Get-CimInstance Win32_Service | Select Name, DisplayName, State, ProcessId, PathName
+  
   # Nearby LAN machines
   arp -a
+
   # Connections and listeners 
   netstat -ano
+
   # IP, DNS, gateway, subnet context
   ipconfig /all
 
+  # Defender posture
+  Get-MpComputerStatus
+
+  # Firewall rule surface
+  Get-NetFirewallRule | select DisplayName, Enabled, Direction, Action
+
+  # Locate Security Product binary
+  Get-ChildItem -Path C:\ -Include MsSense.exe -File -Recurse -ErrorAction SilentlyContinue
+
+  # AV detection (Workstation only, not servers)
+  wmic /namespace:\root\securitycenter2 path antivirusproduct
   ```
-- **User and Group Enumeration:**
+- **User, Group and Share Enumeration:**
 
   ```powershell
   # Domain password policy
   net accounts /domain
+  
   # Privileges in current token
   whoami /priv
+
   # Group-based access
   whoami /groups
+
   # List local users
   net user
+
+  # Local SMB exposure
+  net share
+  
   # List domain users
   net user /domain
+
   # List local groups
   net group
+
   # List domain groups
   net group /domain
+
   # List local machine groups
   net localgroup
+
   # List local Administrators group members
   net localgroup administrators
+
   # Query a specific domain user
   net user 0xIapetus /domain
   
