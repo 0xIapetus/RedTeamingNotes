@@ -67,7 +67,7 @@ Use these notes only in environments where you have explicit authorization.
   ```
 - **Uncover Domain Controllers via DNS :**
   ```cmd
-  # Location of services through the DNS SRV type, without having to scan a single port, cmd only
+  #Location of services through the DNS SRV type, without having to scan a single port, cmd only
   nslookup -type=srv _ldap._tcp.goblins.local From Windows CMD
   ```
 - **Set DNS to the domain controller when resolution is not configured:**
