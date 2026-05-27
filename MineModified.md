@@ -82,7 +82,8 @@ Use these notes only in environments where you have explicit authorization.
 
   ```cmd
   #Will return specific properties of a specific user
-  ipconfig /all 
+  ipconfig /all
+  
   systeminfo
   systeminfo | findstr Domain
   whoami /priv
