@@ -78,7 +78,7 @@ Use these notes only in environments where you have explicit authorization.
 
 ## Initial Reconnaissance
 
-- **Network and host basics:**
+- **Conextual Awareness:**
 
   ```cmd
   ipconfig /all
