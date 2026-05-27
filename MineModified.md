@@ -57,8 +57,6 @@ Use these notes only in environments where you have explicit authorization.
 
   ```powershell
   powershell -ExecutionPolicy bypass
-  powershell -c <Command>
-  powershell -encodedcommand <Base64Command>
   $env:PSExecutionPolicyPreference = "bypass"
   ```
 
@@ -80,7 +78,7 @@ Use these notes only in environments where you have explicit authorization.
 
 - **Conextual Awareness:**
 
-  ```cmd
+  ```powershell
   #Will return specific properties of a specific user
   ipconfig /all
   
@@ -92,7 +90,7 @@ Use these notes only in environments where you have explicit authorization.
   arp -a
   net share
   ```
-
+  
 - **PowerShell connection checks:**
 
   ```powershell
