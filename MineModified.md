@@ -56,7 +56,7 @@ Use these notes only in environments where you have explicit authorization.
 - **Bypass PowerShell execution policy:**
 
   ```powershell
-  powershell -ExecutionPolicy bypass
+  Set-ExecutionPolicy Bypass -Scope Process
   $env:PSExecutionPolicyPreference = "bypass"
   ```
 
@@ -79,9 +79,12 @@ Use these notes only in environments where you have explicit authorization.
 - **Conextual Awareness:**
 
   ```powershell
+  Get-Process
+  
   #Will return specific properties of a specific user
   ipconfig /all
-  
+
+  Get-Process
   systeminfo
   systeminfo | findstr Domain
   whoami /priv
