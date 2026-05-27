@@ -79,27 +79,53 @@ Use these notes only in environments where you have explicit authorization.
 - **Conextual Awareness:**
 
   ```powershell
+  # Host/Domain context
+  systeminfo
+  # Check the proccesses
   Get-Process
-  
-  #Will return specific properties of a specific user
+  # Nearby LAN machines
+  arp -a
+  # Connections and listeners 
+  netstat -ano
+  # IP, DNS, gateway, subnet context
   ipconfig /all
 
-  Get-Process
-  systeminfo
-  systeminfo | findstr Domain
-  whoami /priv
-  whoami /groups
-  netstat -abno
-  arp -a
-  net share
   ```
-  
-- **PowerShell connection checks:**
+- **User and Group Enumeration:**
 
   ```powershell
-  Test-NetConnection -ComputerName <TargetHost> -Port <Port>
-  (New-Object System.Net.Sockets.TcpClient("<TargetHost>", "<Port>")).Connected
-  1..1024 | % { echo ((New-Object Net.Sockets.TcpClient).Connect("<TargetHost>", $_)) "Open port - $_" } 2>$null
+  # Domain password policy
+  net accounts /domain
+  # Privileges in current token
+  whoami /priv
+  # Group-based access
+  whoami /groups
+  # List local users
+  net user
+  # List domain users
+  net user /domain
+  # List local groups
+  net group
+  # List domain groups
+  net group /domain
+  # List local machine groups
+  net localgroup
+  # List local Administrators group members
+  net localgroup administrators
+  # Query a specific domain user
+  net user 0xIapetus /domain
+  
+- **Port and Host Discovery:**
+
+  ```powershell
+  # Local port range check
+  for($i=130; $i -le 140; $i++){Test-NetConnection localhost -Port $i}
+
+  # Find live hosts in subnet
+  1..255 | %{echo "10.10.168.$_"; ping -n 1 10.10.168.$_ | Select-String ttl}
+
+  # TCP sweep one host
+  1..1024 | %{echo ((New-Object Net.Sockets.TcpClient).Connect("10.0.2.8", $_)) "Open port on - $_"} 2>$null
   ```
 
 - **Service, process, task, and patch review:**
