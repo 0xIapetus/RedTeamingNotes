@@ -66,7 +66,7 @@ Use these notes only in environments where you have explicit authorization.
   runas.exe /netonly /user:<DomainName>\<Username> cmd.exe
   ```
 - **Uncover Domain Controllers via DNS :**
-  ```cmd
+  ```powershell
   #Location of services through the DNS SRV type, without having to scan a single port, cmd only
   nslookup -type=srv _ldap._tcp.goblins.local From Windows CMD
   ```
