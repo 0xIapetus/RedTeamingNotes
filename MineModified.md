@@ -175,7 +175,6 @@ Use these notes only in environments where you have explicit authorization.
   #  Get Specific domain 
   Get-Domain -Domain <DomainName>
 
-
   # Domain SID
   Get-DomainSID
 
@@ -259,13 +258,12 @@ Use these notes only in environments where you have explicit authorization.
   # Server OS targets
   Get-DomainComputer -OperatingSystem "*Server 2016*"
 
-
   ```
 
 - **Sessions and User Hunting:**
 
   ```powershell
-  # Logged-on users
+  # Logged-on users (needs local admin rights on the target)
   Get-NetLoggedon -ComputerName <ComputerName>
 
   # Active sessions
@@ -273,9 +271,6 @@ Use these notes only in environments where you have explicit authorization.
 
   # Local logon history
   Get-LoggedonLocal -ComputerName <ComputerName>
-
-  # Last logged-on user
-  Get-LastLoggedOn -ComputerName <ComputerName>
 
   # Find where users are active
   Find-DomainUserLocation
