@@ -220,10 +220,8 @@ Use these notes only in environments where you have explicit authorization.
   Get-DomainUser -Identity <Username> -Properties DisplayName,MemberOf | Format-List
 
   # User property discovery
-  Get-UserProperty
+  Get-DomainUser -Identity student1 -Properties *
 
-  # Check for active users with high logoncount
-  et-DomainUser -Properties samaccountname,logonCount
 
   # Description field loot
   Get-DomainUser -LDAPFilter "Description=*pass*" | Select name,Description
@@ -233,8 +231,8 @@ Use these notes only in environments where you have explicit authorization.
 
   ```powershell
   # All domain groups
-  Get-DomainGroup | Select-Object Name
-  
+  Get-DomainGroup | select Name
+    
   # Target domain groups
   Get-DomainGroup -Domain <DomainName>
 
