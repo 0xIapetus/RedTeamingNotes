@@ -218,6 +218,12 @@ Use these notes only in environments where you have explicit authorization.
   # User membership context
   Get-DomainUser -Identity <Username> -Properties DisplayName,MemberOf | Format-List
 
+  #Finds all machines on the current domain where the current user has local admin access
+  Find-LocalAdminAccess -Verbose
+
+  #Find local admins on all machines of the domain
+  Find-DomainLocalGroupMember -Verbose
+
   # User property discovery
   Get-DomainUser -Identity student1 -Properties *
 
