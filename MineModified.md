@@ -207,7 +207,7 @@ Use these notes only in environments where you have explicit authorization.
 
   ```powershell
   # All domain users
-  Get-DomainUser
+  Get-DomainUser | Out-File -FilePath .\DomainUsers.txt
 
   # Specific user
   Get-DomainUser -Identity <Username>
@@ -239,6 +239,9 @@ Use these notes only in environments where you have explicit authorization.
 
   # Admin-like net groups 
   Get-NetGroup *admin*
+
+  #Return members of Specific Group 
+  Get-DomainGroup -Identity '<GroupName>' | Select-Object -ExpandProperty Member
 
   # Domain Admins membership
   Get-DomainGroupMember -Identity "Domain Admins" -Recurse
@@ -275,7 +278,7 @@ Use these notes only in environments where you have explicit authorization.
   # Find where users are active
   Find-DomainUserLocation
 
-  # Find users in target domain
+  # Find loggen on users in the target domain machines
   Find-DomainUserLocation -Domain <DomainName> | Select-Object UserName,SessionFromName
 
   # Stealthier user hunting
