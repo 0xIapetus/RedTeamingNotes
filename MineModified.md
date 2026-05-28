@@ -294,6 +294,9 @@ Use these notes only in environments where you have explicit authorization.
   # Readable domain shares
   Find-DomainShare -CheckShareAccess
 
+  #Enumerate "Interesting" Files on accessible shares
+  Find-InterestingDomainShareFile -Include *passwords*
+
   # Host share listing
   Get-NetShare -ComputerName <ComputerName>
 
@@ -381,9 +384,6 @@ Use these notes only in environments where you have explicit authorization.
 
   # Local group members
   Get-NetLocalGroupMember -ComputerName <ComputerName> -GroupName Administrators
-
-  # Recursive local admin view
-  Get-NetLocalGroup -ComputerName <ComputerName> -Recurse
   ```
 
 - **BloodHound Collection:**
