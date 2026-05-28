@@ -316,9 +316,16 @@ Use these notes only in environments where you have explicit authorization.
 - **GPOs and OUs:**
 
   ```powershell
+  
+  #Return all GPOs in a domain that modify local group memberships through Restricted Groups or Group Policy Preferences
+  Get-DomainGPOLocalGroup | Select-Object GPODisplayName, GroupName
+
   # All GPOs
   Get-DomainGPO
 
+  # Find interesting ACLs on GPOs:
+  Get-DomainGPO | Get-DomainObjectAcl -ResolveGUIDs
+  
   # GPOs linked to a computer
   Get-DomainGPO -ComputerIdentity <ComputerName>
 
@@ -333,10 +340,16 @@ Use these notes only in environments where you have explicit authorization.
 
   # All OUs
   Get-DomainOU
+  
+  # Find where a GPO applies:
+  Get-DomainOU -GPLink "{GPO-GUID}"
 
   # OU-linked GPOs
   Get-DomainOU | Select-Object Name,GPLink
 
+  Find users/groups with rights over GPOs
+  Find-InterestingDomainAcl -ResolveGUIDs | ? {$_.ObjectDN -like "*CN=Policies,CN=System*"}
+  
   # Effective AppLocker policy
   Get-AppLockerPolicy -Effective | Select-Object -ExpandProperty RuleCollections
   ```
