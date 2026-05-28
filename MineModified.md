@@ -222,7 +222,6 @@ Use these notes only in environments where you have explicit authorization.
   # User property discovery
   Get-DomainUser -Identity student1 -Properties *
 
-
   # Description field loot
   Get-DomainUser -LDAPFilter "Description=*pass*" | Select name,Description
   ```
@@ -244,9 +243,6 @@ Use these notes only in environments where you have explicit authorization.
 
   # Domain Admins membership
   Get-DomainGroupMember -Identity "Domain Admins" -Recurse
-
-  # Domain Admins via AD module
-  Get-ADGroupMember -Identity "Domain Admins" -Recursive
 
   # User group memberships
   Get-DomainGroup -UserName <Username>
@@ -382,7 +378,7 @@ Use these notes only in environments where you have explicit authorization.
 - **Local Groups on Domain Hosts:**
 
   ```powershell
-  # Local groups on host
+  # Local groups on host (needs administrator privs on non-dc machines)
   Get-NetLocalGroup -ComputerName <ComputerName> -ListGroups
 
   # Local group members
