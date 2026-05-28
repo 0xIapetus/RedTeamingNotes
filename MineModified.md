@@ -65,11 +65,7 @@ Use these notes only in environments where you have explicit authorization.
   ```cmd
   runas.exe /netonly /user:<DomainName>\<Username> cmd.exe
   ```
-- **Uncover Domain Controllers via DNS :**
-  ```powershell
-  #Location of services through the DNS SRV type, without having to scan a single port, cmd only
-  nslookup -type=srv _ldap._tcp.goblins.local From Windows CMD
-  ```
+
 - **Set DNS to the domain controller when resolution is not configured:**
 
   ```powershell
@@ -77,6 +73,14 @@ Use these notes only in environments where you have explicit authorization.
   $index = Get-NetAdapter -Name "Ethernet" | Select-Object -ExpandProperty ifIndex
   Set-DnsClientServerAddress -InterfaceIndex $index -ServerAddresses $dnsip
   ```
+- **Set DNS to the domain controller when resolution is not configured:**
+
+  ```powershell
+  # GPO and script share loot via kerberos
+  dir \\<DomainName>\SYSVOL
+
+  # GPO and script share loot via NTLM (pref)
+  dir \\<DCIP>\SYSVOL
 
 ## Initial Reconnaissance
 
@@ -186,6 +190,311 @@ Use these notes only in environments where you have explicit authorization.
   Get-ChildItem -Path C:\ -Include *password*,*secret*,*config* -File -Recurse -ErrorAction SilentlyContinue
   Get-Content "C:\Path\To\InterestingFile.txt"
   ```
+## Domain Enumeration
+
+- **DNS and Domain Context:**
+
+  ```powershell
+  #Uncover Domain Controllers via DNS SRV type, cmd only
+  nslookup -type=srv _ldap._tcp.goblins.local 
+   
+  # Current domain context
+  Get-Domain
+
+  # Current domain context via AD module
+  Get-ADDomain
+
+  # Specific domain context
+  Get-Domain -Domain <DomainName>
+
+  # Specific domain context via AD module
+  Get-ADDomain -Identity <DomainName>
+
+  # Domain SID
+  Get-DomainSID
+
+  # Domain SID via AD module
+  (Get-ADDomain).DomainSID
+  ```
+
+- **Tooling Setup:**
+
+  ```powershell
+  # Load AD module DLL
+  Import-Module C:\AD\Tools\ADModule-master\Microsoft.ActiveDirectory.Management.dll
+
+  # Load AD module manifest
+  Import-Module C:\AD\Tools\ADModule-master\ActiveDirectory\ActiveDirectory.psd1
+
+  # Install RSAT AD tooling
+  Get-WindowsCapability -Name RSAT* -Online | Add-WindowsCapability -Online
+  ```
+
+- **Domain Policy and Controllers:**
+
+  ```powershell
+  # Domain policy
+  Get-DomainPolicyData
+
+  # Password policy
+  (Get-DomainPolicyData).SystemAccess
+
+  # Kerberos policy
+  (Get-DomainPolicyData).KerberosPolicy
+
+  # Target domain password policy
+  (Get-DomainPolicyData -Domain <DomainName>).SystemAccess
+
+  # Domain controllers
+  Get-DomainController
+
+  # Domain controllers via AD module
+  Get-ADDomainController
+
+  # Target domain controllers
+  Get-DomainController -Domain <DomainName>
+
+  # Discover target domain controller
+  Get-ADDomainController -DomainName <DomainName> -Discover
+  ```
+
+- **Users and Interesting Attributes:**
+
+  ```powershell
+  # All domain users
+  Get-DomainUser
+
+  # Specific user
+  Get-DomainUser -Identity <Username>
+
+  # User detail via AD module
+  Get-ADUser -Identity <Username> -Properties *
+
+  # All users via AD module
+  Get-ADUser -Filter * -Properties *
+
+  # Usernames and logon count
+  Get-DomainUser -Properties SamAccountName,LogonCount
+
+  # User membership context
+  Get-DomainUser -Identity <Username> -Properties DisplayName,MemberOf | Format-List
+
+  # User property discovery
+  Get-ADUser -Filter * -Properties * | Select-Object -First 1 | Get-Member -MemberType *Property | Select-Object Name
+
+  # Password age and logon count
+  Get-ADUser -Filter * -Properties * | Select-Object Name,LogonCount,@{Name="PwdLastSet";Expression={[datetime]::FromFileTime($_.PwdLastSet)}}
+
+  # Description field loot
+  Get-ADUser -Filter 'Description -like "*pass*"' -Properties Description | Select-Object Name,Description
+  ```
+
+- **Groups and Admin Paths:**
+
+  ```powershell
+  # All domain groups
+  Get-DomainGroup | Select-Object Name
+
+  # All groups via AD module
+  Get-ADGroup -Filter * | Select-Object Name
+
+  # Target domain groups
+  Get-DomainGroup -Domain <DomainName>
+
+  # Admin-like groups
+  Get-DomainGroup *admin*
+
+  # Admin-like groups via AD module
+  Get-ADGroup -Filter 'Name -like "*admin*"' | Select-Object Name
+
+  # Domain Admins membership
+  Get-DomainGroupMember -Identity "Domain Admins" -Recurse
+
+  # Domain Admins via AD module
+  Get-ADGroupMember -Identity "Domain Admins" -Recursive
+
+  # User group memberships
+  Get-DomainGroup -UserName <Username>
+
+  # User group memberships via AD module
+  Get-ADPrincipalGroupMembership -Identity <Username>
+  ```
+
+- **Computers and Live Hosts:**
+
+  ```powershell
+  # All domain computers
+  Get-DomainComputer | Select-Object Name
+
+  # All computers via AD module
+  Get-ADComputer -Filter * | Select-Object Name
+
+  # Computer inventory
+  Get-DomainComputer -Properties OperatingSystem,Name,DnsHostName | Sort-Object DnsHostName
+
+  # Live computer inventory
+  Get-DomainComputer -Ping -Properties OperatingSystem,Name,DnsHostName | Sort-Object DnsHostName
+
+  # Server OS targets
+  Get-DomainComputer -OperatingSystem "*Server*"
+
+  # Server OS targets via AD module
+  Get-ADComputer -Filter 'OperatingSystem -like "*Server*"' -Properties OperatingSystem | Select-Object Name,OperatingSystem
+
+  # Ping sweep from AD computer DNS names
+  Get-ADComputer -Filter * -Properties DNSHostName | ForEach-Object { Test-Connection -Count 1 -ComputerName $_.DNSHostName }
+  ```
+
+- **Sessions and User Hunting:**
+
+  ```powershell
+  # Logged-on users
+  Get-NetLoggedon -ComputerName <ComputerName>
+
+  # Active sessions
+  Get-NetSession -ComputerName <ComputerName>
+
+  # Local logon history
+  Get-LoggedonLocal -ComputerName <ComputerName>
+
+  # Last logged-on user
+  Get-LastLoggedOn -ComputerName <ComputerName>
+
+  # Find where users are active
+  Find-DomainUserLocation
+
+  # Find users in target domain
+  Find-DomainUserLocation -Domain <DomainName> | Select-Object UserName,SessionFromName
+
+  # Stealthier user hunting
+  Find-DomainUserLocation -Stealth
+  ```
+
+- **Shares and SYSVOL:**
+
+  ```powershell
+  # Domain shares
+  Find-DomainShare
+
+  # Readable domain shares
+  Find-DomainShare -CheckShareAccess
+
+  # Host share listing
+  Get-NetShare -ComputerName <ComputerName>
+
+  # SYSVOL over Kerberos
+  dir \\<DomainName>\SYSVOL
+
+  # SYSVOL over NTLM
+  dir \\<DCIP>\SYSVOL
+  ```
+
+- **GPOs and OUs:**
+
+  ```powershell
+  # All GPOs
+  Get-DomainGPO
+
+  # GPOs linked to a computer
+  Get-DomainGPO -ComputerIdentity <ComputerName>
+
+  # GPO local group changes
+  Get-DomainGPOLocalGroup
+
+  # Computer local admin via GPO
+  Get-DomainGPOComputerLocalGroupMapping -ComputerIdentity <ComputerName>
+
+  # User local admin via GPO
+  Get-DomainGPOUserLocalGroupMapping -Identity <Username> -Verbose
+
+  # All OUs
+  Get-DomainOU
+
+  # OU-linked GPOs
+  Get-DomainOU | Select-Object Name,GPLink
+
+  # Effective AppLocker policy
+  Get-AppLockerPolicy -Effective | Select-Object -ExpandProperty RuleCollections
+  ```
+
+- **ACLs and Object Control:**
+
+  ```powershell
+  # Object ACLs
+  Get-DomainObjectAcl -SamAccountName <AccountName> -ResolveGUIDs
+
+  # Interesting ACLs
+  Find-InterestingDomainAcl -ResolveGUIDs
+
+  # ACLs owned by a user
+  Find-InterestingDomainAcl -ResolveGUIDs | Where-Object {$_.IdentityReferenceName -match "<Username>"}
+
+  # Object owner
+  Get-DomainObjectOwner -Identity <AccountName>
+  ```
+
+- **Trusts and Forests:**
+
+  ```powershell
+  # Domain trusts
+  Get-DomainTrust
+
+  # Domain trusts via AD module
+  Get-ADTrust -Filter *
+
+  # Target domain trust
+  Get-DomainTrust -Domain <DomainName>
+
+  # Target domain trust via AD module
+  Get-ADTrust -Identity <DomainName>
+
+  # Current forest
+  Get-Forest
+
+  # Current forest via AD module
+  Get-ADForest
+
+  # Target forest
+  Get-Forest -Forest <ForestName>
+
+  # Target forest via AD module
+  Get-ADForest -Identity <ForestName>
+
+  # Forest domains
+  (Get-ADForest).Domains
+
+  # Forest trusts
+  Get-ForestTrust
+
+  # Global catalogs
+  Get-ForestGlobalCatalog
+  ```
+
+- **Local Groups on Domain Hosts:**
+
+  ```powershell
+  # Local groups on host
+  Get-NetLocalGroup -ComputerName <ComputerName> -ListGroups
+
+  # Local group members
+  Get-NetLocalGroupMember -ComputerName <ComputerName> -GroupName Administrators
+
+  # Recursive local admin view
+  Get-NetLocalGroup -ComputerName <ComputerName> -Recurse
+  ```
+
+- **BloodHound Collection:**
+
+  ```powershell
+  # Full BloodHound collection
+  Invoke-BloodHound -CollectionMethod All
+
+  # Full collection without DC session noise
+  Invoke-BloodHound -CollectionMethod All -ExcludeDC
+
+  # Target domain collection
+  Invoke-BloodHound -CollectionMethod All -Domain <DomainName>
+
 
 ## Domain Enumeration
 
