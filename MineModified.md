@@ -73,14 +73,6 @@ Use these notes only in environments where you have explicit authorization.
   $index = Get-NetAdapter -Name "Ethernet" | Select-Object -ExpandProperty ifIndex
   Set-DnsClientServerAddress -InterfaceIndex $index -ServerAddresses $dnsip
   ```
-- **Set DNS to the domain controller when resolution is not configured:**
-
-  ```powershell
-  # GPO and script share loot via kerberos
-  dir \\<DomainName>\SYSVOL
-
-  # GPO and script share loot via NTLM (pref)
-  dir \\<DCIP>\SYSVOL
 
 ## Initial Reconnaissance
 
@@ -169,65 +161,24 @@ Use these notes only in environments where you have explicit authorization.
   1..1024 | %{echo ((New-Object Net.Sockets.TcpClient).Connect("10.0.2.8", $_)) "Open port on - $_"} 2>$null
   ```
 
-- **Service, process, task, and patch review:**
-
-  ```powershell
-  Get-Process
-  Get-Service WinDefend
-  Get-MpComputerStatus | Select-Object RealTimeProtectionEnabled
-  Get-NetFirewallProfile | Format-Table Name, Enabled
-  Get-NetFirewallRule | Select-Object DisplayName, Enabled, Direction, Action
-  Get-NetTCPConnection | Where-Object State -Match Listen
-  Get-HotFix
-  schtasks /query /fo list /v
-  ```
-
-- **Permissions and file hunting:**
-
-  ```powershell
-  Get-Acl C:\
-  icacls <Directory>
-  Get-ChildItem -Path C:\ -Include *password*,*secret*,*config* -File -Recurse -ErrorAction SilentlyContinue
-  Get-Content "C:\Path\To\InterestingFile.txt"
-  ```
 ## Domain Enumeration
 
 - **DNS and Domain Context:**
 
   ```powershell
-  #Uncover Domain Controllers via DNS SRV type, cmd only
+  # Uncover Domain Controllers via DNS SRV type, cmd only
   nslookup -type=srv _ldap._tcp.goblins.local 
    
   # Current domain context
   Get-Domain
 
-  # Current domain context via AD module
-  Get-ADDomain
-
-  # Specific domain context
+  #  Get Specific domain 
   Get-Domain -Domain <DomainName>
 
-  # Specific domain context via AD module
-  Get-ADDomain -Identity <DomainName>
 
   # Domain SID
   Get-DomainSID
 
-  # Domain SID via AD module
-  (Get-ADDomain).DomainSID
-  ```
-
-- **Tooling Setup:**
-
-  ```powershell
-  # Load AD module DLL
-  Import-Module C:\AD\Tools\ADModule-master\Microsoft.ActiveDirectory.Management.dll
-
-  # Load AD module manifest
-  Import-Module C:\AD\Tools\ADModule-master\ActiveDirectory\ActiveDirectory.psd1
-
-  # Install RSAT AD tooling
-  Get-WindowsCapability -Name RSAT* -Online | Add-WindowsCapability -Online
   ```
 
 - **Domain Policy and Controllers:**
@@ -248,14 +199,9 @@ Use these notes only in environments where you have explicit authorization.
   # Domain controllers
   Get-DomainController
 
-  # Domain controllers via AD module
-  Get-ADDomainController
-
   # Target domain controllers
   Get-DomainController -Domain <DomainName>
 
-  # Discover target domain controller
-  Get-ADDomainController -DomainName <DomainName> -Discover
   ```
 
 - **Users and Interesting Attributes:**
@@ -267,12 +213,6 @@ Use these notes only in environments where you have explicit authorization.
   # Specific user
   Get-DomainUser -Identity <Username>
 
-  # User detail via AD module
-  Get-ADUser -Identity <Username> -Properties *
-
-  # All users via AD module
-  Get-ADUser -Filter * -Properties *
-
   # Usernames and logon count
   Get-DomainUser -Properties SamAccountName,LogonCount
 
@@ -280,13 +220,13 @@ Use these notes only in environments where you have explicit authorization.
   Get-DomainUser -Identity <Username> -Properties DisplayName,MemberOf | Format-List
 
   # User property discovery
-  Get-ADUser -Filter * -Properties * | Select-Object -First 1 | Get-Member -MemberType *Property | Select-Object Name
+  Get-UserProperty
 
-  # Password age and logon count
-  Get-ADUser -Filter * -Properties * | Select-Object Name,LogonCount,@{Name="PwdLastSet";Expression={[datetime]::FromFileTime($_.PwdLastSet)}}
+  # Check for active users with high logoncount
+  et-DomainUser -Properties samaccountname,logonCount
 
   # Description field loot
-  Get-ADUser -Filter 'Description -like "*pass*"' -Properties Description | Select-Object Name,Description
+  Get-DomainUser -LDAPFilter "Description=*pass*" | Select name,Description
   ```
 
 - **Groups and Admin Paths:**
@@ -294,18 +234,15 @@ Use these notes only in environments where you have explicit authorization.
   ```powershell
   # All domain groups
   Get-DomainGroup | Select-Object Name
-
-  # All groups via AD module
-  Get-ADGroup -Filter * | Select-Object Name
-
+  
   # Target domain groups
   Get-DomainGroup -Domain <DomainName>
 
-  # Admin-like groups
+  # Admin-like domain groups 
   Get-DomainGroup *admin*
 
-  # Admin-like groups via AD module
-  Get-ADGroup -Filter 'Name -like "*admin*"' | Select-Object Name
+  # Admin-like net groups 
+  Get-NetGroup *admin*
 
   # Domain Admins membership
   Get-DomainGroupMember -Identity "Domain Admins" -Recurse
@@ -316,33 +253,19 @@ Use these notes only in environments where you have explicit authorization.
   # User group memberships
   Get-DomainGroup -UserName <Username>
 
-  # User group memberships via AD module
-  Get-ADPrincipalGroupMembership -Identity <Username>
   ```
 
 - **Computers and Live Hosts:**
 
   ```powershell
-  # All domain computers
-  Get-DomainComputer | Select-Object Name
 
-  # All computers via AD module
-  Get-ADComputer -Filter * | Select-Object Name
-
-  # Computer inventory
+  # Domain computers
   Get-DomainComputer -Properties OperatingSystem,Name,DnsHostName | Sort-Object DnsHostName
 
-  # Live computer inventory
-  Get-DomainComputer -Ping -Properties OperatingSystem,Name,DnsHostName | Sort-Object DnsHostName
-
   # Server OS targets
-  Get-DomainComputer -OperatingSystem "*Server*"
+  Get-DomainComputer -OperatingSystem "*Server 2016*"
 
-  # Server OS targets via AD module
-  Get-ADComputer -Filter 'OperatingSystem -like "*Server*"' -Properties OperatingSystem | Select-Object Name,OperatingSystem
 
-  # Ping sweep from AD computer DNS names
-  Get-ADComputer -Filter * -Properties DNSHostName | ForEach-Object { Test-Connection -Count 1 -ComputerName $_.DNSHostName }
   ```
 
 - **Sessions and User Hunting:**
@@ -382,10 +305,10 @@ Use these notes only in environments where you have explicit authorization.
   # Host share listing
   Get-NetShare -ComputerName <ComputerName>
 
-  # SYSVOL over Kerberos
+  # SYSVOL over Kerberos (GPO and script share loot)
   dir \\<DomainName>\SYSVOL
 
-  # SYSVOL over NTLM
+  # SYSVOL over NTLM (GPO and script share loot)
   dir \\<DCIP>\SYSVOL
   ```
 
@@ -439,29 +362,17 @@ Use these notes only in environments where you have explicit authorization.
   # Domain trusts
   Get-DomainTrust
 
-  # Domain trusts via AD module
-  Get-ADTrust -Filter *
+
 
   # Target domain trust
   Get-DomainTrust -Domain <DomainName>
 
-  # Target domain trust via AD module
-  Get-ADTrust -Identity <DomainName>
-
   # Current forest
   Get-Forest
 
-  # Current forest via AD module
-  Get-ADForest
 
   # Target forest
   Get-Forest -Forest <ForestName>
-
-  # Target forest via AD module
-  Get-ADForest -Identity <ForestName>
-
-  # Forest domains
-  (Get-ADForest).Domains
 
   # Forest trusts
   Get-ForestTrust
@@ -489,11 +400,8 @@ Use these notes only in environments where you have explicit authorization.
   # Full BloodHound collection
   Invoke-BloodHound -CollectionMethod All
 
-  # Full collection without DC session noise
+  # Full collection without touching DC (maybe stealthier)
   Invoke-BloodHound -CollectionMethod All -ExcludeDC
-
-  # Target domain collection
-  Invoke-BloodHound -CollectionMethod All -Domain <DomainName>
 
 
 ## Domain Enumeration
