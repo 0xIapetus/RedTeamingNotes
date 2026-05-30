@@ -255,6 +255,9 @@ Use these notes only in environments where you have explicit authorization.
   # User group memberships
   Get-DomainGroup -UserName <Username>
 
+  # Target domain Enterprise Admins
+  Get-NetGroupMember -GroupName "Enterprise Admins" -Domain <DomainName>
+
   ```
 
 - **Computers and Live Hosts:**
@@ -375,8 +378,6 @@ Use these notes only in environments where you have explicit authorization.
   ```powershell
   # Domain trusts
   Get-DomainTrust
-
-
 
   # Target domain trust
   Get-DomainTrust -Domain <DomainName>
