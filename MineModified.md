@@ -411,7 +411,7 @@ Use these notes only in environments where you have explicit authorization.
   # Full BloodHound collection
   Invoke-BloodHound -CollectionMethod All
 
-  # Full collection without touching DC (maybe stealthier)
+  # Full collection without touching DC (maybe stealthier,avoid tools like MDI)
   Invoke-BloodHound -CollectionMethod All -ExcludeDC
 
 
