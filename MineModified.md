@@ -243,8 +243,9 @@ Use these notes only in environments where you have explicit authorization.
   # User property discovery
   Get-DomainUser -Identity student1 -Properties *
 
-  # Description field loot (maybe check for all descriptions)
+  # Description field loot 
   Get-DomainUser -LDAPFilter "Description=*pass*" | Select name,Description
+  Get-DomainUser | Select name,Description
   ```
 
 - **Groups and Admin Paths:**
