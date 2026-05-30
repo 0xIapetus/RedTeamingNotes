@@ -186,10 +186,10 @@ Use these notes only in environments where you have explicit authorization.
   # Domain policy
   Get-DomainPolicyData
 
-  # Password policy
+  # Password policy (bruteforce usefull, age/etc.)
   (Get-DomainPolicyData).SystemAccess
 
-  # Kerberos policy
+  # Kerberos policy (Usefull for creating golden/silver tickets)
   (Get-DomainPolicyData).KerberosPolicy
 
   # Target domain password policy
@@ -206,14 +206,30 @@ Use these notes only in environments where you have explicit authorization.
 - **Users and Interesting Attributes:**
 
   ```powershell
+  
   # All domain users
   Get-DomainUser | Out-File -FilePath .\DomainUsers.txt
 
   # Specific user
   Get-DomainUser -Identity <Username>
 
-  # Usernames and logon count
-  Get-DomainUser -Properties SamAccountName,LogonCount
+  # Avoid decoy users and prefer high logon count and pwdlastset close to today's date
+  Get-DomainUser -Properties SamAccountName,LogonCount,pwdlastset
+
+  # All disabled users
+  Get-DomainUser -LDAPFilter "(userAccountControl:1.2.840.113556.1.4.803:=2)"
+
+  # All users that need smart card authentication
+  Get-DomainUser -LDAPFilter "(useraccountcontrol:1.2.840.113556.1.4.803:=262144)"
+
+  # Find Users with an SPN set (maybe service accounts)
+  Get-DomainUser -SPN
+
+  # Users who don't have kerberos preauthentication set (bruteforce the TGT to get the pass)
+  Get-DomainUser -UACFilter DONT_REQ_PREAUTH
+
+  # Users with sidHistory set
+  Get-DomainUser -LDAPFilter '(sidHistory=*)'
 
   # User membership context
   Get-DomainUser -Identity <Username> -Properties DisplayName,MemberOf | Format-List
@@ -227,7 +243,7 @@ Use these notes only in environments where you have explicit authorization.
   # User property discovery
   Get-DomainUser -Identity student1 -Properties *
 
-  # Description field loot
+  # Description field loot (maybe check for all descriptions)
   Get-DomainUser -LDAPFilter "Description=*pass*" | Select name,Description
   ```
 
