@@ -275,7 +275,7 @@ Use these notes only in environments where you have explicit authorization.
 - **Sessions and User Hunting:**
 
   ```powershell
-  # Logged-on users (needs local admin rights on the target)
+  #  Actively Logged-on users (needs local admin rights on the target)
   Get-NetLoggedon -ComputerName <ComputerName>
 
   # Active sessions
@@ -299,6 +299,9 @@ Use these notes only in environments where you have explicit authorization.
   ```powershell
   # Domain shares
   Find-DomainShare
+
+  # Find shares with filtered noise
+  Invoke-ShareFinder -ExcludeStandard -ExcludePrint -ExcludeIPC -Verbose
 
   # Readable domain shares
   Find-DomainShare -CheckShareAccess
