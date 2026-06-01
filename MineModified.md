@@ -339,42 +339,41 @@ Use these notes only in environments where you have explicit authorization.
 - **GPOs and OUs:**
 
   ```powershell
-  
-  #Return all GPOs in a domain that modify local group memberships through Restricted Groups or Group Policy Preferences
-  Get-DomainGPOLocalGroup | Select-Object GPODisplayName, GroupName
 
   # All GPOs
   Get-DomainGPO
 
-  # Find interesting ACLs on GPOs:
-  Get-DomainGPO | Get-DomainObjectAcl -ResolveGUIDs
-  
   # GPOs linked to a computer
   Get-DomainGPO -ComputerIdentity <ComputerName>
 
-  # GPO local group changes
-  Get-DomainGPOLocalGroup
-
-  # Computer local admin via GPO
+  # Which GPOs are granting local group access on domain machines.
+  Get-DomainGPOLocalGroup | Select-Object GPODisplayName, GroupName
+  
+  # Get Users which are a in Local Group of a machine via GPO
   Get-DomainGPOComputerLocalGroupMapping -ComputerIdentity <ComputerName>
 
-  # User local admin via GPO
+  # Get Machines where a User is a Member of a Group
   Get-DomainGPOUserLocalGroupMapping -Identity <Username> -Verbose
 
   # All OUs
   Get-DomainOU
-  
-  # Find where a GPO applies:
-  Get-DomainOU -GPLink "{GPO-GUID}"
 
   # OU-linked GPOs
   Get-DomainOU | Select-Object Name,GPLink
+ 
+
+  # Find interesting ACLs on GPOs:
+  Get-DomainGPO | Get-DomainObjectAcl -ResolveGUIDs
+  
+ 
+  # Find where a GPO applies:
+  Get-DomainOU -GPLink "{GPO-GUID}"
+
+
 
   Find users/groups with rights over GPOs
   Find-InterestingDomainAcl -ResolveGUIDs | ? {$_.ObjectDN -like "*CN=Policies,CN=System*"}
-  
-  # Effective AppLocker policy
-  Get-AppLockerPolicy -Effective | Select-Object -ExpandProperty RuleCollections
+
   ```
 
 - **ACLs and Object Control:**
