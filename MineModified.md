@@ -364,16 +364,12 @@ Use these notes only in environments where you have explicit authorization.
 
   # Find interesting ACLs on GPOs:
   Get-DomainGPO | Get-DomainObjectAcl -ResolveGUIDs
-  
- 
+
   # Find where a GPO applies:
   Get-DomainOU -GPLink "{GPO-GUID}"
 
-
-
   # Find users/groups with rights over GPOs
   Find-InterestingDomainAcl -ResolveGUIDs | ? {$_.ObjectDN -like "*CN=Policies,CN=System*"}
-
   ```
 
 - **ACLs and Object Control:**
