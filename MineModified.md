@@ -371,7 +371,7 @@ Use these notes only in environments where you have explicit authorization.
 
 
 
-  Find users/groups with rights over GPOs
+  # Find users/groups with rights over GPOs
   Find-InterestingDomainAcl -ResolveGUIDs | ? {$_.ObjectDN -like "*CN=Policies,CN=System*"}
 
   ```
