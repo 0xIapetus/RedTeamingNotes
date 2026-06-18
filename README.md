@@ -1,9 +1,3 @@
-# Red Team Cheat Sheet
-
-This cheat sheet reorganizes the original `README.md` notes into a cleaner knowledge-base format while preserving the source material and command detail.
-
-Use these notes only in environments where you have explicit authorization.
-
 ## Summary
 
 - [Tools and Resources](#tools-and-resources)
