@@ -122,6 +122,9 @@
   # Host/Domain context
   systeminfo
   
+  # Environment variables
+  set
+  
   # Check the proccesses
   Get-Process
   
