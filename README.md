@@ -119,6 +119,12 @@
 - **Conextual Awareness:**
 
   ```powershell
+  # Users logged in curently
+  qwinsta
+
+  # Info for local accounts & domain accounts logged into the device
+  wmic useraccount list /format:list
+  
   # Host/Domain context
   systeminfo
   
@@ -126,7 +132,7 @@
   set
   
   # Check the proccesses
-  Get-Process
+  gps
   
   # Scheduled execution surface
   Get-ScheduledTask
@@ -136,6 +142,9 @@
   
   # Nearby LAN machines
   arp -a
+
+  # Route table
+  route print
 
   # Connections and listeners 
   netstat -ano
@@ -148,6 +157,7 @@
 
   # Firewall rule surface
   Get-NetFirewallRule | select DisplayName, Enabled, Direction, Action
+  netsh advfirewall show allprofiles
 
   # Locate Security Product binary
   Get-ChildItem -Path C:\ -Include MsSense.exe -File -Recurse -ErrorAction SilentlyContinue
@@ -159,7 +169,7 @@
 
   ```powershell
   # Domain password policy
-  net accounts /domain
+  net1 accounts /domain
   
   # Privileges in current token
   whoami /priv
@@ -168,28 +178,28 @@
   whoami /groups
 
   # List local users
-  net user
+  net1 user
 
   # Local SMB exposure
-  net share
+  net1 share
   
   # List domain users
-  net user /domain
+  net1 user /domain
 
   # List local groups
-  net group
+  net1 group
 
   # List domain groups
-  net group /domain
+  net1 group /domain
 
   # List local machine groups
-  net localgroup
+  net1 localgroup
 
   # List local Administrators group members
-  net localgroup administrators
+  net1 localgroup administrators
 
   # Query a specific domain user
-  net user 0xIapetus /domain
+  net1 user 0xIapetus /domain
   
 - **Port and Host Discovery:**
 
